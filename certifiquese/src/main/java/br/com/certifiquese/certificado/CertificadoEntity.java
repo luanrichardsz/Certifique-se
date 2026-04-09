@@ -1,5 +1,6 @@
 package br.com.certifiquese.certificado;
 
+import br.com.certifiquese.usuario.UsuarioEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -32,6 +33,7 @@ public class CertificadoEntity {
 
     private int cargaHoraria;
 
-//    @ManyToOne
-//    public UsuarioEntity usuario;
+    @ManyToOne
+    @JoinColumn(name = "id_usuario", nullable = false)
+    private UsuarioEntity usuario;
 }
