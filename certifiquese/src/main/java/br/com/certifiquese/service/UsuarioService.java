@@ -4,6 +4,9 @@ import br.com.certifiquese.dto.UsuarioRequestDTO;
 import br.com.certifiquese.dto.UsuarioResponseDTO;
 import br.com.certifiquese.model.UsuarioEntity;
 import br.com.certifiquese.repository.UsuarioRepository;
+
+import java.util.List;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,6 +48,13 @@ public class UsuarioService {
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
 
         return toResponseDTO(usuario);
+    }
+
+    public List<UsuarioResponseDTO> listarTodos() {
+        List<UsuarioEntity> usuarios = usuarioRepository.findAll();
+        return usuarios.stream()
+                .map(this::toResponseDTO)
+                .toList();
     }
 
     private UsuarioResponseDTO toResponseDTO(UsuarioEntity usuario) {
