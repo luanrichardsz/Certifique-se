@@ -7,7 +7,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Entity
-@Table(name = "tb_certificado")
+@Table(name = "tb_certificado", uniqueConstraints = @UniqueConstraint(columnNames = "hash_certificado"))
 @Getter
 @Setter
 @AllArgsConstructor
@@ -17,7 +17,7 @@ public class CertificadoEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idCertificado;
 
-    @Column(name = "hash_certificado", unique = true)
+    @Column(name = "hash_certificado", nullable = false, unique = true)
     private String hashCertificado;
 
     @Column(nullable = false)
@@ -33,10 +33,7 @@ public class CertificadoEntity {
     private LocalDate dataConclusao;
 
     @ElementCollection
-    @CollectionTable(
-            name = "tb_certificado_tag",
-            joinColumns = @JoinColumn(name = "id_certificado")
-    )
+    @CollectionTable(name = "tb_certificado_tag", joinColumns = @JoinColumn(name = "id_certificado"))
     @Column(name = "tag", nullable = false)
     private List<String> tags;
 
