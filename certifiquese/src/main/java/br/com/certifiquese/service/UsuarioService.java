@@ -2,9 +2,11 @@ package br.com.certifiquese.service;
 
 import br.com.certifiquese.dto.UsuarioRequestDTO;
 import br.com.certifiquese.dto.UsuarioResponseDTO;
+import br.com.certifiquese.model.Role;
 import br.com.certifiquese.model.UsuarioEntity;
 import br.com.certifiquese.repository.UsuarioRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -31,6 +33,8 @@ public class UsuarioService {
         UsuarioEntity usuario = new UsuarioEntity();
         usuario.setNomeUsuario(dto.nomeUsuario());
         usuario.setEmail(dto.email());
+        usuario.setRole(Role.USER);
+        usuario.setCriadoEm(LocalDateTime.now());
 
         String senhaCriptografada = passwordEncoder.encode(dto.senha());
         usuario.setSenha(senhaCriptografada);
@@ -62,7 +66,9 @@ public class UsuarioService {
                 usuario.getIdUsuario(),
                 usuario.getNomeUsuario(),
                 usuario.getEmail(),
-                usuario.getBiografia()
+            usuario.getBiografia(),
+            usuario.getRole(),
+            usuario.getCriadoEm()
         );
     }
 }
