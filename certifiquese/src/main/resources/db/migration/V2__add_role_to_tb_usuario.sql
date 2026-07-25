@@ -1,0 +1,9 @@
+ALTER TABLE tb_usuario
+ADD COLUMN role VARCHAR(50);
+
+UPDATE tb_usuario
+SET role = 'USER'
+WHERE role IS NULL;
+
+ALTER TABLE tb_usuario
+ALTER COLUMN role SET NOT NULL;
