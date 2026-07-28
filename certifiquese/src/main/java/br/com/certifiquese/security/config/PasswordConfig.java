@@ -1,4 +1,4 @@
-package br.com.certifiquese.config;
+package br.com.certifiquese.security.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
