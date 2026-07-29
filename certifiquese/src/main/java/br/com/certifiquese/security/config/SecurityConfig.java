@@ -13,6 +13,8 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
+import jakarta.servlet.DispatcherType;
+
 import br.com.certifiquese.security.authentication.UsuarioDetailsService;
 
 @Configuration
@@ -25,6 +27,8 @@ public class SecurityConfig {
 				.csrf(csrf -> csrf.disable())
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> auth
+						.dispatcherTypeMatchers(DispatcherType.ERROR)
+						.permitAll()
 						.requestMatchers(
 								"/v3/api-docs/**",
 								"/swagger-ui/**",
@@ -32,6 +36,8 @@ public class SecurityConfig {
 						.permitAll()
 						.requestMatchers(HttpMethod.POST, "/usuarios")
 						.permitAll()
+						.requestMatchers(HttpMethod.GET, "/usuarios")
+						.hasRole("ADMIN")
 						.anyRequest()
 						.authenticated())
 				.httpBasic(Customizer.withDefaults())
