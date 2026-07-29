@@ -29,15 +29,15 @@ public class CertificadoService {
     }
 
     @Transactional
-    public CertificadoResponseDTO cadastrar(CertificadoRequestDTO dto) {
+    public CertificadoResponseDTO cadastrar(Long idUsuario, CertificadoRequestDTO dto) {
         String hashCertificado = gerarHashCertificado(dto);
 
         if (certificadoRepository.existsByHashCertificado(hashCertificado)) {
             throw new IllegalArgumentException("Já existe um certificado cadastrado com este hash.");
         }
 
-        UsuarioEntity usuario = usuarioRepository.findById(dto.idUsuario())
-                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado com ID: " + dto.idUsuario()));
+        UsuarioEntity usuario = usuarioRepository.findById(idUsuario)
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado com ID: " + idUsuario));
 
         CertificadoEntity certificado = new CertificadoEntity();
         certificado.setHashCertificado(hashCertificado);

@@ -34,6 +34,8 @@ public class SecurityConfig {
 								"/swagger-ui/**",
 								"/swagger-ui.html")
 						.permitAll()
+						.requestMatchers(HttpMethod.GET, "/certificados")
+						.hasRole("ADMIN")
 						.requestMatchers(HttpMethod.POST, "/usuarios")
 						.permitAll()
 						.requestMatchers(HttpMethod.GET, "/usuarios")

@@ -9,9 +9,6 @@ import java.time.LocalDate;
 import java.util.List;
 
 public record CertificadoRequestDTO(
-        @NotNull(message = "O ID do usuário é obrigatório")
-        Long idUsuario,
-
         @NotBlank(message = "A foto do certificado é obrigatória")
         String foto,
 
