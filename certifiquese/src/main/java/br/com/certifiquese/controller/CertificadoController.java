@@ -2,6 +2,7 @@ package br.com.certifiquese.controller;
 
 import java.util.List;
 
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,7 +14,6 @@ import org.springframework.web.bind.annotation.RestController;
 import br.com.certifiquese.dto.CertificadoRequestDTO;
 import br.com.certifiquese.dto.CertificadoResponseDTO;
 import br.com.certifiquese.service.CertificadoService;
-import br.com.certifiquese.security.authentication.UsuarioAutenticado;
 
 @RestController
 @RequestMapping("/certificados")
@@ -26,16 +26,22 @@ public class CertificadoController {
     }
 
     @PostMapping
-    public ResponseEntity<CertificadoResponseDTO> cadastrar(@AuthenticationPrincipal UsuarioAutenticado usuarioAutenticado, @RequestBody CertificadoRequestDTO dto) {
+    public ResponseEntity<CertificadoResponseDTO> cadastrar(@AuthenticationPrincipal Jwt jwt, @RequestBody CertificadoRequestDTO dto) {
         // Implementação do método de cadastro de certificado
-        CertificadoResponseDTO certificadoSalvo = certificadoService.cadastrar(usuarioAutenticado.getId(), dto);
+        Number usuarioIdClaim = jwt.getClaim("usuarioId");
+        Long usuarioId = usuarioIdClaim.longValue();
+        
+        CertificadoResponseDTO certificadoSalvo = certificadoService.cadastrar(usuarioId, dto);
         return ResponseEntity.ok(certificadoSalvo);
     }
 
     @GetMapping("/me")
-    public ResponseEntity<List<CertificadoResponseDTO>> listarCertificadoPorIdUsuario(@AuthenticationPrincipal UsuarioAutenticado usuarioAutenticado) {
+    public ResponseEntity<List<CertificadoResponseDTO>> listarCertificadoPorIdUsuario(@AuthenticationPrincipal Jwt jwt) {
         // Implementação do método de listagem de certificados
-        List<CertificadoResponseDTO> certificados = certificadoService.buscarPorIdUsuario(usuarioAutenticado.getId());
+        Number usuarioIdClaim = jwt.getClaim("usuarioId");
+        Long usuarioId = usuarioIdClaim.longValue();
+        
+        List<CertificadoResponseDTO> certificados = certificadoService.buscarPorIdUsuario(usuarioId);
         return ResponseEntity.ok(certificados);
     }
 
