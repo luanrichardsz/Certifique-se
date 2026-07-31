@@ -34,6 +34,7 @@ build/
 
 # Variaveis de ambiente
 .env
+.envrc
 
 # Arquivos de configurações do Docker
 docker-compose.yml
