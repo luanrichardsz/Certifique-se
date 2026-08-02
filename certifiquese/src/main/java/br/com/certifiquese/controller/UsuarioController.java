@@ -6,7 +6,9 @@ import br.com.certifiquese.service.UsuarioService;
 
 import java.util.List;
 
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -28,5 +30,14 @@ public class UsuarioController {
     public ResponseEntity<List<UsuarioResponseDTO>> listarTodos() {
         List<UsuarioResponseDTO> usuarios = usuarioService.listarTodos();
         return ResponseEntity.ok(usuarios);
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UsuarioResponseDTO> listarUsuario(@AuthenticationPrincipal Jwt jwt) {
+        Number usuarioIdClaim = jwt.getClaim("usuarioId");
+        Long usuarioId = usuarioIdClaim.longValue();
+
+        UsuarioResponseDTO usuarioLogado = usuarioService.buscarPorId(usuarioId);
+        return ResponseEntity.ok(usuarioLogado);
     }
 }
