@@ -7,10 +7,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.DeleteMapping;
 
 import br.com.certifiquese.dto.CertificadoRequestDTO;
 import br.com.certifiquese.dto.CertificadoResponseDTO;
@@ -48,5 +50,12 @@ public class CertificadoController {
         
         List<CertificadoResponseDTO> certificados = certificadoService.pesquisar(jwt, filtro);
         return ResponseEntity.ok(certificados);
+    }
+
+    @DeleteMapping("/{hashCertificado}")
+    public ResponseEntity<Void> deletar(@AuthenticationPrincipal Jwt jwt, @PathVariable String hashCertificado) {
+        
+        certificadoService.deletar(jwt, hashCertificado);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -110,6 +110,20 @@ public class CertificadoService {
         return certificados.stream().map(this::toResponseDTO).toList();
     }
 
+    public void deletar(Jwt jwt, String hashCertificado) {
+        Number usuarioIdClaim = jwt.getClaim("usuarioId");
+        Long idUsuario = usuarioIdClaim.longValue();
+
+        CertificadoEntity certificado = certificadoRepository.findByHashCertificado(hashCertificado)
+                .orElseThrow(() -> new IllegalArgumentException("Certificado não encontrado com o hash fornecido."));
+
+        if (!certificado.getUsuario().getIdUsuario().equals(idUsuario)) {
+            throw new IllegalArgumentException("O usuário não tem permissão para deletar este certificado.");
+        }
+
+        certificadoRepository.delete(certificado);
+    }
+
     private CertificadoResponseDTO toResponseDTO(CertificadoEntity certificado) {
         return new CertificadoResponseDTO(
                 certificado.getIdCertificado(),
