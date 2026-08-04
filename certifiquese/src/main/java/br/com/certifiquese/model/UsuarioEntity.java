@@ -34,6 +34,9 @@ public class UsuarioEntity {
     @Column(nullable = false)
     private Role role = Role.USER;
 
+    @Column(nullable = false)
+    private int tokenVersion;
+
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL)
     private List<CertificadoEntity> certificados;
 

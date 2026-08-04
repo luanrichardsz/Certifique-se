@@ -7,6 +7,9 @@ import org.springframework.security.oauth2.jwt.Jwt;
 
 import br.com.certifiquese.dto.CertificadoRequestDTO;
 import br.com.certifiquese.dto.CertificadoResponseDTO;
+import br.com.certifiquese.exception.RecursoEmConflitoException;
+import br.com.certifiquese.exception.OperacaoNaoPermitidaException;
+import br.com.certifiquese.exception.RecursoNaoEncontradoException;
 import br.com.certifiquese.model.CertificadoEntity;
 import br.com.certifiquese.model.UsuarioEntity;
 import br.com.certifiquese.repository.CertificadoRepository;
@@ -37,11 +40,11 @@ public class CertificadoService {
         String hashCertificado = gerarHashCertificado(dto);
 
         if (certificadoRepository.existsByHashCertificado(hashCertificado)) {
-            throw new IllegalArgumentException("Já existe um certificado cadastrado com este hash.");
+            throw new RecursoEmConflitoException("Já existe um certificado cadastrado com este hash.");
         }
 
         UsuarioEntity usuario = usuarioRepository.findById(idUsuario)
-                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado com ID: " + idUsuario));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado."));
 
         CertificadoEntity certificado = new CertificadoEntity();
         certificado.setHashCertificado(hashCertificado);
@@ -115,10 +118,10 @@ public class CertificadoService {
         Long idUsuario = usuarioIdClaim.longValue();
 
         CertificadoEntity certificado = certificadoRepository.findByHashCertificado(hashCertificado)
-                .orElseThrow(() -> new IllegalArgumentException("Certificado não encontrado com o hash fornecido."));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Certificado não encontrado com o hash fornecido."));
 
         if (!certificado.getUsuario().getIdUsuario().equals(idUsuario)) {
-            throw new IllegalArgumentException("O usuário não tem permissão para deletar este certificado.");
+            throw new OperacaoNaoPermitidaException("O usuário não tem permissão para deletar este certificado.");
         }
 
         certificadoRepository.delete(certificado);

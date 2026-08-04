@@ -16,14 +16,19 @@ import org.springframework.security.web.SecurityFilterChain;
 
 import jakarta.servlet.DispatcherType;
 
+import br.com.certifiquese.model.UsuarioEntity;
+import br.com.certifiquese.repository.UsuarioRepository;
 import br.com.certifiquese.security.authentication.UsuarioDetailsService;
+
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtException;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
 	@Bean
-	public SecurityFilterChain securityFilterChain(HttpSecurity http, DaoAuthenticationProvider authenticationProvider) throws Exception {
+	public SecurityFilterChain securityFilterChain(HttpSecurity http, DaoAuthenticationProvider authenticationProvider, UsuarioRepository usuarioRepository) throws Exception {
 		return http
 				.csrf(csrf -> csrf.disable())
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -37,13 +42,13 @@ public class SecurityConfig {
 						.permitAll()
 						.requestMatchers(HttpMethod.GET, "/certificados")
 						.hasRole("ADMIN")
-						.requestMatchers(HttpMethod.POST, "/usuarios", "/auth/login")
+						.requestMatchers(HttpMethod.POST, "/usuarios", "/auth/login", "/auth/esqueci-senha", "/auth/redefinir-senha")
 						.permitAll()
 						.requestMatchers(HttpMethod.GET, "/usuarios")
 						.hasRole("ADMIN")
 						.anyRequest()
 						.authenticated())
-				.oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
+				.oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter(usuarioRepository))))
 				.authenticationProvider(authenticationProvider)
 				.build();
 	}
@@ -63,15 +68,35 @@ public class SecurityConfig {
 	}
 
 	@Bean
-	public JwtAuthenticationConverter jwtAuthenticationConverter(){
+	public JwtAuthenticationConverter jwtAuthenticationConverter(UsuarioRepository usuarioRepository){
 		JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
 		
 		authoritiesConverter.setAuthorityPrefix("");
 		authoritiesConverter.setAuthoritiesClaimName("roles");
 
 		JwtAuthenticationConverter authenticationConverter = new JwtAuthenticationConverter();
-		authenticationConverter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
+		authenticationConverter.setJwtGrantedAuthoritiesConverter(jwt -> {
+			validarTokenVersao(jwt, usuarioRepository);
+			return authoritiesConverter.convert(jwt);
+		});
 
 		return authenticationConverter;
+	}
+
+	private void validarTokenVersao(Jwt jwt, UsuarioRepository usuarioRepository) {
+		Number usuarioIdClaim = jwt.getClaim("usuarioId");
+		Number tokenVersionClaim = jwt.getClaim("tokenVersion");
+
+		if (usuarioIdClaim == null) {
+			throw new JwtException("Token inválido.");
+		}
+
+		UsuarioEntity usuario = usuarioRepository.findById(usuarioIdClaim.longValue())
+				.orElseThrow(() -> new JwtException("Token inválido."));
+
+		int tokenVersion = tokenVersionClaim == null ? 0 : tokenVersionClaim.intValue();
+		if (usuario.getTokenVersion() != tokenVersion) {
+			throw new JwtException("Token inválido.");
+		}
 	}
 }
