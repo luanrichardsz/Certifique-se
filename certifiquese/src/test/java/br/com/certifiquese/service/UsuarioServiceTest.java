@@ -12,7 +12,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import br.com.certifiquese.dto.UsuarioUpdateDTO;
 import br.com.certifiquese.exception.RecursoNaoEncontradoException;
+import br.com.certifiquese.exception.RecursoEmConflitoException;
 import br.com.certifiquese.exception.SenhaIncorretaException;
 import br.com.certifiquese.model.CertificadoEntity;
 import br.com.certifiquese.model.Role;
@@ -108,6 +110,31 @@ class UsuarioServiceTest {
         assertThat(fotosRemovidas).isEmpty();
     }
 
+    @Test
+    void deveAtualizarUsuarioLogado() {
+        UsuarioEntity usuario = novoUsuario(1L, "hash-senha");
+        usuarios.put(1L, usuario);
+
+        var resposta = usuarioService.atualizar(jwtComUsuarioId(1L), new UsuarioUpdateDTO("Novo Nome", "novo@exemplo.com", "Nova bio"));
+
+        assertThat(resposta.nomeUsuario()).isEqualTo("Novo Nome");
+        assertThat(resposta.email()).isEqualTo("novo@exemplo.com");
+        assertThat(usuarios.get(1L).getEmail()).isEqualTo("novo@exemplo.com");
+    }
+
+    @Test
+    void deveBloquearAtualizacaoQuandoEmailJaEstiverEmUsoPorOutroUsuario() {
+        UsuarioEntity usuario = novoUsuario(1L, "hash-senha");
+        UsuarioEntity outroUsuario = novoUsuario(2L, "outro-hash");
+        usuario.setEmail("primeiro@exemplo.com");
+        outroUsuario.setEmail("novo@exemplo.com");
+        usuarios.put(1L, usuario);
+        usuarios.put(2L, outroUsuario);
+
+        assertThatThrownBy(() -> usuarioService.atualizar(jwtComUsuarioId(1L), new UsuarioUpdateDTO("Novo Nome", "novo@exemplo.com", "Nova bio")))
+                .isInstanceOf(RecursoEmConflitoException.class);
+    }
+
     private UsuarioEntity novoUsuario(Long idUsuario, String senhaHash) {
         UsuarioEntity usuario = new UsuarioEntity();
         usuario.setIdUsuario(idUsuario);
@@ -138,12 +165,19 @@ class UsuarioServiceTest {
     private UsuarioRepository criarUsuarioRepository() {
         InvocationHandler handler = (proxy, method, args) -> switch (method.getName()) {
             case "findById" -> Optional.ofNullable(usuarios.get((Long) args[0]));
+            case "save" -> {
+                UsuarioEntity usuario = (UsuarioEntity) args[0];
+                usuarios.put(usuario.getIdUsuario(), usuario);
+                yield usuario;
+            }
             case "delete" -> {
                 usuariosRemovidos.add((UsuarioEntity) args[0]);
                 yield null;
             }
             case "flush" -> null;
             case "existsByEmail" -> false;
+            case "existsByEmailAndIdUsuarioNot" -> usuarios.values().stream()
+                    .anyMatch(usuario -> usuario.getEmail().equals(args[0]) && !usuario.getIdUsuario().equals(args[1]));
             case "findAll" -> new ArrayList<>(usuarios.values());
             case "findByEmail" -> Optional.empty();
             default -> valorPadrao(method.getReturnType());
