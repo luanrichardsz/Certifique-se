@@ -1,28 +1,30 @@
 package br.com.certifiquese.service;
 
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.security.oauth2.jwt.Jwt;
-
-import br.com.certifiquese.dto.CertificadoRequestDTO;
-import br.com.certifiquese.dto.CertificadoResponseDTO;
-import br.com.certifiquese.exception.RecursoEmConflitoException;
-import br.com.certifiquese.exception.OperacaoNaoPermitidaException;
-import br.com.certifiquese.exception.RecursoNaoEncontradoException;
-import br.com.certifiquese.model.CertificadoEntity;
-import br.com.certifiquese.model.UsuarioEntity;
-import br.com.certifiquese.repository.CertificadoRepository;
-import br.com.certifiquese.repository.UsuarioRepository;
-import br.com.certifiquese.dto.CertificadoFiltroDTO;
-import br.com.certifiquese.specification.CertificadoSpecification;
-
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import br.com.certifiquese.dto.CertificadoFiltroDTO;
+import br.com.certifiquese.dto.CertificadoRequestDTO;
+import br.com.certifiquese.dto.CertificadoResponseDTO;
+import br.com.certifiquese.dto.CertificadoUpdateDTO;
+import br.com.certifiquese.dto.HashCertificadoProvider;
+import br.com.certifiquese.exception.OperacaoNaoPermitidaException;
+import br.com.certifiquese.exception.RecursoEmConflitoException;
+import br.com.certifiquese.exception.RecursoNaoEncontradoException;
+import br.com.certifiquese.model.CertificadoEntity;
+import br.com.certifiquese.model.UsuarioEntity;
+import br.com.certifiquese.repository.CertificadoRepository;
+import br.com.certifiquese.repository.UsuarioRepository;
+import br.com.certifiquese.specification.CertificadoSpecification;
 
 @Service
 public class CertificadoService {
@@ -37,7 +39,7 @@ public class CertificadoService {
 
     @Transactional
     public CertificadoResponseDTO cadastrar(Long idUsuario, CertificadoRequestDTO dto) {
-        String hashCertificado = gerarHashCertificado(dto);
+        String hashCertificado = gerarHashCertificado((HashCertificadoProvider) dto);
 
         if (certificadoRepository.existsByHashCertificado(hashCertificado)) {
             throw new RecursoEmConflitoException("Já existe um certificado cadastrado com este hash.");
@@ -60,13 +62,37 @@ public class CertificadoService {
         return toResponseDTO(certificadoSalvo);
     }
 
-    private String gerarHashCertificado(CertificadoRequestDTO dto) {
+    @Transactional
+    public CertificadoResponseDTO atualizar(Long idUsuario, String hashCertificado, CertificadoUpdateDTO dto) {
+        CertificadoEntity certificado = certificadoRepository.findByHashCertificado(hashCertificado)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Certificado não encontrado com o hash fornecido."));
+
+        if (!certificado.getUsuario().getIdUsuario().equals(idUsuario)) {
+            throw new OperacaoNaoPermitidaException("O usuário não tem permissão para editar este certificado.");
+        }
+
+        String novoHashCertificado = gerarHashCertificado((HashCertificadoProvider) dto);
+        if (!hashCertificado.equals(novoHashCertificado) && certificadoRepository.existsByHashCertificado(novoHashCertificado)) {
+            throw new RecursoEmConflitoException("Já existe um certificado cadastrado com este hash.");
+        }
+
+        certificado.setHashCertificado(novoHashCertificado);
+        certificado.setFoto(dto.foto());
+        certificado.setNome(dto.nome());
+        certificado.setEmpresa(dto.empresa());
+        certificado.setDataConclusao(dto.dataConclusao());
+        certificado.setTags(dto.tags());
+
+        return toResponseDTO(certificadoRepository.save(certificado));
+    }
+
+    private String gerarHashCertificado(HashCertificadoProvider provider) {
         String conteudo = String.join("|",
-                dto.foto(),
-                dto.nome(),
-                dto.empresa(),
-                dto.dataConclusao().toString(),
-                dto.tags().stream().sorted().collect(Collectors.joining(","))
+                provider.foto(),
+                provider.nome(),
+                provider.empresa(),
+                provider.dataConclusao().toString(),
+                provider.tags().stream().sorted().collect(Collectors.joining(","))
         );
 
         try {

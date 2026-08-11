@@ -2,6 +2,7 @@ package br.com.certifiquese.controller;
 
 import br.com.certifiquese.dto.UsuarioRequestDTO;
 import br.com.certifiquese.dto.UsuarioResponseDTO;
+import br.com.certifiquese.dto.UsuarioUpdateDTO;
 import br.com.certifiquese.dto.ExcluirContaRequestDTO;
 import br.com.certifiquese.service.UsuarioService;
 
@@ -24,8 +25,13 @@ public class UsuarioController {
     }
 
     @PostMapping
-    public UsuarioResponseDTO cadastrar(@RequestBody UsuarioRequestDTO dto) {
-        return usuarioService.cadastrar(dto);
+    public ResponseEntity<UsuarioResponseDTO> cadastrar(@Valid @RequestBody UsuarioRequestDTO dto) {
+        return ResponseEntity.status(201).body(usuarioService.cadastrar(dto));
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<UsuarioResponseDTO> atualizar(@AuthenticationPrincipal Jwt jwt, @Valid @RequestBody UsuarioUpdateDTO dto) {
+        return ResponseEntity.ok(usuarioService.atualizar(jwt, dto));
     }
 
     @GetMapping

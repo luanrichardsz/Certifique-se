@@ -2,6 +2,7 @@ package br.com.certifiquese.service;
 
 import br.com.certifiquese.dto.UsuarioRequestDTO;
 import br.com.certifiquese.dto.UsuarioResponseDTO;
+import br.com.certifiquese.dto.UsuarioUpdateDTO;
 import br.com.certifiquese.exception.RecursoEmConflitoException;
 import br.com.certifiquese.exception.RecursoNaoEncontradoException;
 import br.com.certifiquese.exception.SenhaIncorretaException;
@@ -65,6 +66,24 @@ public class UsuarioService {
         UsuarioEntity usuarioSalvo = usuarioRepository.save(usuario);
 
         return toResponseDTO(usuarioSalvo);
+    }
+
+    @Transactional
+    public UsuarioResponseDTO atualizar(Jwt jwt, UsuarioUpdateDTO dto) {
+        Long idUsuario = obterUsuarioId(jwt);
+
+        UsuarioEntity usuario = usuarioRepository.findById(idUsuario)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado."));
+
+        if (!usuario.getEmail().equals(dto.email()) && usuarioRepository.existsByEmailAndIdUsuarioNot(dto.email(), idUsuario)) {
+            throw new RecursoEmConflitoException("Já existe um usuário cadastrado com este e-mail.");
+        }
+
+        usuario.setNomeUsuario(dto.nomeUsuario());
+        usuario.setEmail(dto.email());
+        usuario.setBiografia(dto.biografia());
+
+        return toResponseDTO(usuarioRepository.save(usuario));
     }
 
     @Transactional(readOnly = true)
