@@ -8,7 +8,7 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-public record CertificadoRequestDTO(
+public record CertificadoUpdateDTO(
         
         @NotBlank(message = "A foto do certificado é obrigatória")
         String foto,

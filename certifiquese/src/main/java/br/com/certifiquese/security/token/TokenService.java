@@ -41,6 +41,7 @@ public class TokenService {
                                           .expiresAt(expiracao)
                                           .subject(usuarioAutenticado.getUsername())
                                           .claim("usuarioId", usuarioAutenticado.getId())
+                                          .claim("tokenVersion", usuarioAutenticado.getUsuario().getTokenVersion())
                                           .claim("roles", roles)
                                           .build();
 
