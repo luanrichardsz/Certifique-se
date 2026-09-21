@@ -13,6 +13,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import java.util.List;
+
 
 import jakarta.servlet.DispatcherType;
 
@@ -30,17 +35,24 @@ public class SecurityConfig {
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http, DaoAuthenticationProvider authenticationProvider, UsuarioRepository usuarioRepository) throws Exception {
 		return http
+				.cors(cors -> cors.configurationSource(corsConfigurationSource()))
 				.csrf(csrf -> csrf.disable())
+				.headers(headers -> headers.frameOptions(frame -> frame.disable()))
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> auth
 						.dispatcherTypeMatchers(DispatcherType.ERROR)
 						.permitAll()
+						.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 						.requestMatchers(
 								"/v3/api-docs/**",
 								"/swagger-ui/**",
 								"/swagger-ui.html")
 						.permitAll()
-						.requestMatchers(HttpMethod.GET, "/certificados")
+							.requestMatchers(HttpMethod.GET, "/public/**")
+							.permitAll()
+							.requestMatchers(HttpMethod.GET, "/certificados/imagens/**")
+							.permitAll()
+							.requestMatchers(HttpMethod.GET, "/certificados")
 						.hasRole("ADMIN")
 						.requestMatchers(HttpMethod.POST, "/usuarios", "/auth/login", "/auth/esqueci-senha", "/auth/redefinir-senha")
 						.permitAll()
@@ -98,5 +110,19 @@ public class SecurityConfig {
 		if (usuario.getTokenVersion() != tokenVersion) {
 			throw new JwtException("Token inválido.");
 		}
+	}
+
+	@Bean
+	public CorsConfigurationSource corsConfigurationSource() {
+		CorsConfiguration configuration = new CorsConfiguration();
+		configuration.setAllowedOriginPatterns(List.of("http://localhost:*", "http://127.0.0.1:*"));
+		configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+		configuration.setAllowedHeaders(List.of("*"));
+		configuration.setExposedHeaders(List.of("*"));
+		configuration.setAllowCredentials(true);
+
+		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+		source.registerCorsConfiguration("/**", configuration);
+		return source;
 	}
 }
