@@ -19,6 +19,13 @@ public class UsuarioEntity {
 
     @Column(nullable = false)
     private String nomeUsuario;
+
+    @Column(nullable = false, unique = true, length = 50)
+    private String username;
+
+    @Column(length = 150)
+    private String headline;
+
     private String biografia;
 
     @Column(nullable = false, unique = true)
@@ -26,6 +33,9 @@ public class UsuarioEntity {
 
     @Column(nullable = false)
     private String senha;
+
+    @Column(name = "perfil_publico", nullable = false)
+    private Boolean perfilPublico = true;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime criadoEm;
@@ -44,6 +54,9 @@ public class UsuarioEntity {
     public void antesDeSalvar(){
         if (role == null) {
             role = Role.USER;
+        }
+        if (perfilPublico == null) {
+            perfilPublico = true;
         }
 
         criadoEm = LocalDateTime.now();

@@ -1,5 +1,7 @@
 package br.com.certifiquese.service;
 
+import br.com.certifiquese.dto.AlterarSenhaRequestDTO;
+import br.com.certifiquese.dto.PerfilPublicoResponseDTO;
 import br.com.certifiquese.dto.UsuarioRequestDTO;
 import br.com.certifiquese.dto.UsuarioResponseDTO;
 import br.com.certifiquese.dto.UsuarioUpdateDTO;
@@ -12,7 +14,7 @@ import br.com.certifiquese.model.CertificadoEntity;
 import br.com.certifiquese.model.UsuarioEntity;
 import br.com.certifiquese.repository.CertificadoRepository;
 import br.com.certifiquese.repository.UsuarioRepository;
-import br.com.certifiquese.service.storage.SupabaseStorageService;
+import br.com.certifiquese.service.storage.CertificadoStorage;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -34,16 +36,16 @@ public class UsuarioService {
     private final UsuarioRepository usuarioRepository;
     private final CertificadoRepository certificadoRepository;
     private final PasswordEncoder passwordEncoder;
-    private final SupabaseStorageService supabaseStorageService;
+    private final CertificadoStorage certificadoStorage;
 
     public UsuarioService(UsuarioRepository usuarioRepository,
                           CertificadoRepository certificadoRepository,
                           PasswordEncoder passwordEncoder,
-                          SupabaseStorageService supabaseStorageService) {
+                          CertificadoStorage certificadoStorage) {
         this.usuarioRepository = usuarioRepository;
         this.certificadoRepository = certificadoRepository;
         this.passwordEncoder = passwordEncoder;
-        this.supabaseStorageService = supabaseStorageService;
+        this.certificadoStorage = certificadoStorage;
     }
 
     @Transactional
@@ -52,10 +54,23 @@ public class UsuarioService {
             throw new RecursoEmConflitoException("Já existe um usuário cadastrado com este e-mail.");
         }
 
+        String username = dto.username();
+        if (username == null || username.isBlank()) {
+            username = gerarUsernameUnico(dto.email());
+        } else {
+            username = username.trim().toLowerCase();
+            if (usuarioRepository.existsByUsername(username)) {
+                throw new RecursoEmConflitoException("Já existe um usuário cadastrado com este username.");
+            }
+        }
+
         UsuarioEntity usuario = new UsuarioEntity();
         usuario.setNomeUsuario(dto.nomeUsuario());
+        usuario.setUsername(username);
+        usuario.setHeadline(dto.headline());
         usuario.setEmail(dto.email());
         usuario.setRole(Role.USER);
+        usuario.setPerfilPublico(true);
         usuario.setCriadoEm(LocalDateTime.now());
 
         String senhaCriptografada = passwordEncoder.encode(dto.senha());
@@ -79,9 +94,21 @@ public class UsuarioService {
             throw new RecursoEmConflitoException("Já existe um usuário cadastrado com este e-mail.");
         }
 
+        if (dto.username() != null && !dto.username().isBlank()) {
+            String novoUsername = dto.username().trim().toLowerCase();
+            if (!novoUsername.equals(usuario.getUsername()) && usuarioRepository.existsByUsernameAndIdUsuarioNot(novoUsername, idUsuario)) {
+                throw new RecursoEmConflitoException("Já existe um usuário cadastrado com este username.");
+            }
+            usuario.setUsername(novoUsername);
+        }
+
         usuario.setNomeUsuario(dto.nomeUsuario());
         usuario.setEmail(dto.email());
+        usuario.setHeadline(dto.headline());
         usuario.setBiografia(dto.biografia());
+        if (dto.perfilPublico() != null) {
+            usuario.setPerfilPublico(dto.perfilPublico());
+        }
 
         return toResponseDTO(usuarioRepository.save(usuario));
     }
@@ -92,6 +119,50 @@ public class UsuarioService {
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado."));
 
         return toResponseDTO(usuario);
+    }
+
+    @Transactional(readOnly = true)
+    public PerfilPublicoResponseDTO buscarPerfilPublico(String username) {
+        String usernameNormalizado = username.trim().toLowerCase();
+        UsuarioEntity usuario = usuarioRepository.findByUsername(usernameNormalizado)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Perfil público não encontrado para o usuário informado."));
+
+        if (!Boolean.TRUE.equals(usuario.getPerfilPublico())) {
+            throw new RecursoNaoEncontradoException("Este usuário desativou a visualização pública do perfil.");
+        }
+
+        List<CertificadoEntity> certificadosPublicos = certificadoRepository.findByUsuarioUsernameAndPublicoTrue(usernameNormalizado);
+        int totalCertificados = certificadosPublicos.size();
+        int totalHoras = certificadosPublicos.stream()
+                .filter(c -> c.getCargaHoraria() != null)
+                .mapToInt(CertificadoEntity::getCargaHoraria)
+                .sum();
+
+        return new PerfilPublicoResponseDTO(
+                usuario.getNomeUsuario(),
+                usuario.getUsername(),
+                usuario.getHeadline(),
+                usuario.getBiografia(),
+                usuario.getCriadoEm(),
+                totalCertificados,
+                totalHoras
+        );
+    }
+
+    @Transactional
+    public void alterarSenha(Jwt jwt, AlterarSenhaRequestDTO dto) {
+        Long idUsuario = obterUsuarioId(jwt);
+
+        UsuarioEntity usuario = usuarioRepository.findById(idUsuario)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado."));
+
+        if (!passwordEncoder.matches(dto.senhaAtual(), usuario.getSenha())) {
+            throw new SenhaIncorretaException("A senha atual informada está incorreta.");
+        }
+
+        usuario.setSenha(passwordEncoder.encode(dto.novaSenha()));
+        usuario.setTokenVersion(usuario.getTokenVersion() + 1);
+        usuarioRepository.save(usuario);
     }
 
     @Transactional
@@ -107,8 +178,8 @@ public class UsuarioService {
 
         List<CertificadoEntity> certificadosDoUsuario = certificadoRepository.findByUsuarioIdUsuario(usuarioId);
         List<String> fotosDosCertificados = certificadosDoUsuario.stream()
-            .filter(certificado -> certificado.getFoto() != null && !certificado.getFoto().isBlank())
-            .map(certificado -> certificado.getFoto())
+                .filter(certificado -> certificado.getFoto() != null && !certificado.getFoto().isBlank())
+                .map(CertificadoEntity::getFoto)
                 .toList();
 
         if (!certificadosDoUsuario.isEmpty()) {
@@ -133,10 +204,13 @@ public class UsuarioService {
         return new UsuarioResponseDTO(
                 usuario.getIdUsuario(),
                 usuario.getNomeUsuario(),
+                usuario.getUsername(),
                 usuario.getEmail(),
-            usuario.getBiografia(),
-            usuario.getRole(),
-            usuario.getCriadoEm()
+                usuario.getHeadline(),
+                usuario.getBiografia(),
+                usuario.getPerfilPublico(),
+                usuario.getRole(),
+                usuario.getCriadoEm()
         );
     }
 
@@ -150,12 +224,26 @@ public class UsuarioService {
         return usuarioIdClaim.longValue();
     }
 
+    private String gerarUsernameUnico(String email) {
+        String base = email.split("@")[0].toLowerCase().replaceAll("[^a-z0-9._-]", "");
+        if (base.length() < 3) {
+            base = "user" + base;
+        }
+        String candidato = base;
+        int sufixo = 1;
+        while (usuarioRepository.existsByUsername(candidato)) {
+            candidato = base + sufixo;
+            sufixo++;
+        }
+        return candidato;
+    }
+
     private void registrarLimpezaDeImagens(List<String> fotosDosCertificados) {
         if (fotosDosCertificados.isEmpty()) {
             return;
         }
 
-        Runnable limpeza = () -> fotosDosCertificados.forEach(supabaseStorageService::removerFoto);
+        Runnable limpeza = () -> fotosDosCertificados.forEach(certificadoStorage::remover);
 
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
