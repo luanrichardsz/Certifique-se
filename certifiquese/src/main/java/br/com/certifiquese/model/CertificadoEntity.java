@@ -32,6 +32,18 @@ public class CertificadoEntity {
     @Column(name = "data_conclusao", nullable = false)
     private LocalDate dataConclusao;
 
+    @Column(name = "carga_horaria")
+    private Integer cargaHoraria;
+
+    @Column(length = 2000)
+    private String descricao;
+
+    @Column(name = "link_validacao", length = 500)
+    private String linkValidacao;
+
+    @Column(nullable = false)
+    private Boolean publico = true;
+
     @ElementCollection
     @CollectionTable(name = "tb_certificado_tag", joinColumns = @JoinColumn(name = "id_certificado"))
     @Column(name = "tag", nullable = false)
@@ -40,4 +52,11 @@ public class CertificadoEntity {
     @ManyToOne
     @JoinColumn(name = "id_usuario", nullable = false)
     private UsuarioEntity usuario;
+
+    @PrePersist
+    public void antesDeSalvar() {
+        if (publico == null) {
+            publico = true;
+        }
+    }
 }

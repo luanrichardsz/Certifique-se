@@ -18,6 +18,7 @@ import br.com.certifiquese.model.CertificadoEntity;
 import br.com.certifiquese.model.UsuarioEntity;
 import br.com.certifiquese.repository.CertificadoRepository;
 import br.com.certifiquese.repository.UsuarioRepository;
+import br.com.certifiquese.service.storage.CertificadoStorage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -37,12 +38,12 @@ class CertificadoServiceTest {
         usuariosPorId.put(1L, novoUsuario(1L));
         usuariosPorId.put(2L, novoUsuario(2L));
 
-        certificadoService = new CertificadoService(criarCertificadoRepository(), criarUsuarioRepository());
+        certificadoService = new CertificadoService(criarCertificadoRepository(), criarUsuarioRepository(), criarStorage());
     }
 
     @Test
     void deveAtualizarCertificadoDoUsuario() {
-        var resposta = certificadoService.atualizar(1L, "hash-antigo", new CertificadoUpdateDTO("foto-nova", "Nome novo", "Empresa nova", LocalDate.of(2024, 2, 2), List.of("tag-b", "tag-a")));
+        var resposta = certificadoService.atualizar(1L, "hash-antigo", new CertificadoUpdateDTO("foto-nova", "Nome novo", "Empresa nova", LocalDate.of(2024, 2, 2), List.of("tag-b", "tag-a"), 40, "Descricao", "http://link", true));
 
         assertThat(resposta.nome()).isEqualTo("Nome novo");
         assertThat(resposta.hashCertificado()).isNotEqualTo("hash-antigo");
@@ -51,7 +52,7 @@ class CertificadoServiceTest {
 
     @Test
     void deveBloquearEdicaoQuandoCertificadoNaoPertencerAoUsuario() {
-        assertThatThrownBy(() -> certificadoService.atualizar(2L, "hash-antigo", new CertificadoUpdateDTO("foto-nova", "Nome novo", "Empresa nova", LocalDate.of(2024, 2, 2), List.of("tag-b"))))
+        assertThatThrownBy(() -> certificadoService.atualizar(2L, "hash-antigo", new CertificadoUpdateDTO("foto-nova", "Nome novo", "Empresa nova", LocalDate.of(2024, 2, 2), List.of("tag-b"), 40, "Descricao", "http://link", true)))
                 .isInstanceOf(OperacaoNaoPermitidaException.class);
     }
 
@@ -59,7 +60,9 @@ class CertificadoServiceTest {
         UsuarioEntity usuario = new UsuarioEntity();
         usuario.setIdUsuario(idUsuario);
         usuario.setNomeUsuario("Usuário " + idUsuario);
+        usuario.setUsername("usuario" + idUsuario);
         usuario.setEmail("usuario" + idUsuario + "@exemplo.com");
+        usuario.setPerfilPublico(true);
         return usuario;
     }
 
@@ -72,6 +75,10 @@ class CertificadoServiceTest {
         certificado.setEmpresa("Empresa antiga");
         certificado.setDataConclusao(LocalDate.of(2024, 1, 1));
         certificado.setTags(new ArrayList<>(List.of("tag-a")));
+        certificado.setCargaHoraria(20);
+        certificado.setDescricao("Desc");
+        certificado.setLinkValidacao("http://link");
+        certificado.setPublico(true);
         certificado.setUsuario(usuariosPorId.computeIfAbsent(idUsuario, this::novoUsuario));
         return certificado;
     }
@@ -106,6 +113,24 @@ class CertificadoServiceTest {
                 UsuarioRepository.class.getClassLoader(),
                 new Class<?>[] { UsuarioRepository.class },
                 handler);
+    }
+
+    private CertificadoStorage criarStorage() {
+        return new CertificadoStorage() {
+            @Override
+            public ImagemArmazenada armazenar(org.springframework.web.multipart.MultipartFile arquivo) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public ArquivoArmazenado buscar(String chave) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public void remover(String referencia) {
+            }
+        };
     }
 
     private Object valorPadrao(Class<?> type) {

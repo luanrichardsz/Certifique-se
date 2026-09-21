@@ -1,8 +1,11 @@
 package br.com.certifiquese.controller;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.http.CacheControl;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,11 +17,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
 import br.com.certifiquese.dto.CertificadoRequestDTO;
 import br.com.certifiquese.dto.CertificadoResponseDTO;
 import br.com.certifiquese.dto.CertificadoUpdateDTO;
+import br.com.certifiquese.dto.ImagemUploadResponseDTO;
 import br.com.certifiquese.service.CertificadoService;
+import br.com.certifiquese.service.storage.CertificadoStorage;
 import br.com.certifiquese.dto.CertificadoFiltroDTO;
 import jakarta.validation.Valid;
 
@@ -27,9 +34,26 @@ import jakarta.validation.Valid;
 public class CertificadoController {
     
     private final CertificadoService certificadoService;
+    private final CertificadoStorage certificadoStorage;
 
-    public CertificadoController(CertificadoService certificadoService) {
+    public CertificadoController(CertificadoService certificadoService, CertificadoStorage certificadoStorage) {
         this.certificadoService = certificadoService;
+        this.certificadoStorage = certificadoStorage;
+    }
+
+    @PostMapping(value = "/imagens", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ImagemUploadResponseDTO> enviarImagem(@RequestParam("arquivo") MultipartFile arquivo) {
+        CertificadoStorage.ImagemArmazenada imagem = certificadoStorage.armazenar(arquivo);
+        return ResponseEntity.status(201).body(new ImagemUploadResponseDTO(imagem.chave(), imagem.url()));
+    }
+
+    @GetMapping("/imagens/{chave:.+}")
+    public ResponseEntity<byte[]> buscarImagem(@PathVariable String chave) {
+        CertificadoStorage.ArquivoArmazenado arquivo = certificadoStorage.buscar(chave);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(arquivo.contentType()))
+                .cacheControl(CacheControl.maxAge(365, TimeUnit.DAYS).cachePublic().immutable())
+                .body(arquivo.conteudo());
     }
 
     @PostMapping

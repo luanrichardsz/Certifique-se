@@ -10,6 +10,10 @@ public record CertificadoResponseDTO(
         String nome,
         String empresa,
         LocalDate dataConclusao,
-        List<String> tags
+        List<String> tags,
+        Integer cargaHoraria,
+        String descricao,
+        String linkValidacao,
+        Boolean publico
 ) {
 }
