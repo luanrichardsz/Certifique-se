@@ -4,7 +4,13 @@ import org.springframework.web.multipart.MultipartFile;
 
 public interface CertificadoStorage {
 
-    ImagemArmazenada armazenar(MultipartFile arquivo);
+    default ImagemArmazenada armazenar(MultipartFile arquivo) {
+        return armazenar(arquivo, "certificado");
+    }
+
+    default ImagemArmazenada armazenar(MultipartFile arquivo, String prefixo) {
+        return armazenar(arquivo);
+    }
 
     ArquivoArmazenado buscar(String chave);
 

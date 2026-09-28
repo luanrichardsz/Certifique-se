@@ -78,13 +78,13 @@ class UsuarioControllerTest {
         @Override
         public UsuarioResponseDTO cadastrar(UsuarioRequestDTO dto) {
             cadastro = dto;
-            return new UsuarioResponseDTO(1L, dto.nomeUsuario(), dto.username(), dto.email(), dto.headline(), dto.biografia(), true, Role.USER, null);
+            return new UsuarioResponseDTO(1L, dto.nomeUsuario(), dto.username(), dto.email(), dto.headline(), dto.biografia(), null, true, Role.USER, null);
         }
 
         @Override
         public UsuarioResponseDTO atualizar(Jwt jwt, UsuarioUpdateDTO dto) {
             atualizacao = dto;
-            return new UsuarioResponseDTO(7L, dto.nomeUsuario(), dto.username(), dto.email(), dto.headline(), dto.biografia(), dto.perfilPublico(), Role.USER, null);
+            return new UsuarioResponseDTO(7L, dto.nomeUsuario(), dto.username(), dto.email(), dto.headline(), dto.biografia(), dto.foto(), dto.perfilPublico(), Role.USER, null);
         }
 
         @Override

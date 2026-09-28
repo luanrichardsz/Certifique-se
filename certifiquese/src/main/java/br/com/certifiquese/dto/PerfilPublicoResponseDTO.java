@@ -7,6 +7,7 @@ public record PerfilPublicoResponseDTO(
         String username,
         String headline,
         String biografia,
+        String foto,
         LocalDateTime membroDesde,
         int totalCertificados,
         int totalHoras

@@ -51,10 +51,16 @@ public class R2StorageService implements CertificadoStorage {
 
     @Override
     public ImagemArmazenada armazenar(MultipartFile arquivo) {
-        validarArquivo(arquivo);
+        return armazenar(arquivo, "certificado");
+    }
+
+    @Override
+    public ImagemArmazenada armazenar(MultipartFile arquivo, String prefixo) {
+        validarArquivo(arquivo, prefixo);
 
         String contentType = arquivo.getContentType();
-        String chave = "certificado-" + UUID.randomUUID() + EXTENSOES_PERMITIDAS.get(contentType);
+        String prefixoChave = ("perfil".equalsIgnoreCase(prefixo)) ? "perfil" : "certificado";
+        String chave = prefixoChave + "-" + UUID.randomUUID() + EXTENSOES_PERMITIDAS.get(contentType);
 
         try {
             PutObjectRequest request = PutObjectRequest.builder()
@@ -67,13 +73,13 @@ public class R2StorageService implements CertificadoStorage {
             s3Client.putObject(request, RequestBody.fromBytes(arquivo.getBytes()));
             return new ImagemArmazenada(chave, montarUrl(chave));
         } catch (IOException | SdkException ex) {
-            throw new ArmazenamentoException("Não foi possível armazenar a imagem do certificado no R2.", ex);
+            throw new ArmazenamentoException("Não foi possível armazenar a imagem no R2.", ex);
         }
     }
 
     @Override
     public ArquivoArmazenado buscar(String chave) {
-        if (chave == null || !chave.matches("certificado-[0-9a-fA-F-]{36}\\.(jpg|png|webp|pdf)")) {
+        if (chave == null || !chave.matches("(certificado|perfil)-[0-9a-fA-F-]{36}\\.(jpg|png|webp|pdf)")) {
             throw new RecursoNaoEncontradoException("Imagem não encontrada.");
         }
 
@@ -118,15 +124,19 @@ public class R2StorageService implements CertificadoStorage {
         }
     }
 
-    private void validarArquivo(MultipartFile arquivo) {
+    private void validarArquivo(MultipartFile arquivo, String prefixo) {
         if (arquivo == null || arquivo.isEmpty()) {
             throw new IllegalArgumentException("Selecione uma imagem para enviar.");
         }
         if (arquivo.getSize() > TAMANHO_MAXIMO) {
             throw new IllegalArgumentException("A imagem deve ter no máximo 5 MB.");
         }
-        if (!EXTENSOES_PERMITIDAS.containsKey(arquivo.getContentType())) {
+        String contentType = arquivo.getContentType();
+        if (!EXTENSOES_PERMITIDAS.containsKey(contentType)) {
             throw new IllegalArgumentException("Formato de imagem inválido. Use JPEG, PNG, WebP ou PDF.");
+        }
+        if ("perfil".equalsIgnoreCase(prefixo) && "application/pdf".equals(contentType)) {
+            throw new IllegalArgumentException("A foto de perfil deve ser uma imagem (JPEG, PNG ou WebP).");
         }
     }
 
@@ -140,7 +150,7 @@ public class R2StorageService implements CertificadoStorage {
         }
 
         String valor = referencia.trim();
-        if (valor.matches("certificado-[0-9a-fA-F-]{36}\\.(jpg|png|webp|pdf)")) {
+        if (valor.matches("(certificado|perfil)-[0-9a-fA-F-]{36}\\.(jpg|png|webp|pdf)")) {
             return valor;
         }
 
@@ -151,11 +161,11 @@ public class R2StorageService implements CertificadoStorage {
             int inicio = path.indexOf(ROTA_PUBLICA);
             if (inicio >= 0) {
                 String chave = path.substring(inicio + ROTA_PUBLICA.length());
-                return chave.matches("certificado-[0-9a-fA-F-]{36}\\.(jpg|png|webp|pdf)") ? chave : null;
+                return chave.matches("(certificado|perfil)-[0-9a-fA-F-]{36}\\.(jpg|png|webp|pdf)") ? chave : null;
             }
             if (!publicUrl.isBlank() && valor.startsWith(publicUrl + "/")) {
                 String chave = valor.substring(publicUrl.length() + 1);
-                return chave.matches("certificado-[0-9a-fA-F-]{36}\\.(jpg|png|webp|pdf)") ? chave : null;
+                return chave.matches("(certificado|perfil)-[0-9a-fA-F-]{36}\\.(jpg|png|webp|pdf)") ? chave : null;
             }
         } catch (IllegalArgumentException ex) {
             log.debug("Referência de imagem inválida; remoção ignorada: {}", referencia);

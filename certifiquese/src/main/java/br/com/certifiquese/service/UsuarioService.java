@@ -17,10 +17,12 @@ import br.com.certifiquese.repository.UsuarioRepository;
 import br.com.certifiquese.service.storage.CertificadoStorage;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
@@ -109,8 +111,59 @@ public class UsuarioService {
         if (dto.perfilPublico() != null) {
             usuario.setPerfilPublico(dto.perfilPublico());
         }
+        if (dto.foto() != null) {
+            usuario.setFoto(dto.foto().isBlank() ? null : dto.foto().trim());
+        }
 
         return toResponseDTO(usuarioRepository.save(usuario));
+    }
+
+    @Transactional
+    public UsuarioResponseDTO atualizarFoto(Jwt jwt, MultipartFile arquivo) {
+        Long idUsuario = obterUsuarioId(jwt);
+        UsuarioEntity usuario = usuarioRepository.findById(idUsuario)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado."));
+
+        if (arquivo == null || arquivo.isEmpty()) {
+            throw new IllegalArgumentException("Selecione uma imagem para enviar.");
+        }
+
+        String fotoAntiga = usuario.getFoto();
+        CertificadoStorage.ImagemArmazenada imagemArmazenada = certificadoStorage.armazenar(arquivo, "perfil");
+
+        usuario.setFoto(imagemArmazenada.url());
+        UsuarioEntity salvo = usuarioRepository.save(usuario);
+
+        if (fotoAntiga != null && !fotoAntiga.isBlank()) {
+            try {
+                certificadoStorage.remover(fotoAntiga);
+            } catch (Exception ex) {
+                log.warn("Falha ao remover foto anterior de perfil do usuário id={}", idUsuario, ex);
+            }
+        }
+
+        return toResponseDTO(salvo);
+    }
+
+    @Transactional
+    public UsuarioResponseDTO removerFoto(Jwt jwt) {
+        Long idUsuario = obterUsuarioId(jwt);
+        UsuarioEntity usuario = usuarioRepository.findById(idUsuario)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado."));
+
+        String fotoAntiga = usuario.getFoto();
+        usuario.setFoto(null);
+        UsuarioEntity salvo = usuarioRepository.save(usuario);
+
+        if (fotoAntiga != null && !fotoAntiga.isBlank()) {
+            try {
+                certificadoStorage.remover(fotoAntiga);
+            } catch (Exception ex) {
+                log.warn("Falha ao remover foto de perfil do usuário id={}", idUsuario, ex);
+            }
+        }
+
+        return toResponseDTO(salvo);
     }
 
     @Transactional(readOnly = true)
@@ -143,6 +196,7 @@ public class UsuarioService {
                 usuario.getUsername(),
                 usuario.getHeadline(),
                 usuario.getBiografia(),
+                usuario.getFoto(),
                 usuario.getCriadoEm(),
                 totalCertificados,
                 totalHoras
@@ -187,10 +241,15 @@ public class UsuarioService {
             certificadoRepository.flush();
         }
 
+        List<String> fotosParaLimpar = new ArrayList<>(fotosDosCertificados);
+        if (usuario.getFoto() != null && !usuario.getFoto().isBlank()) {
+            fotosParaLimpar.add(usuario.getFoto());
+        }
+
         usuarioRepository.delete(usuario);
         usuarioRepository.flush();
 
-        registrarLimpezaDeImagens(fotosDosCertificados);
+        registrarLimpezaDeImagens(fotosParaLimpar);
     }
 
     public List<UsuarioResponseDTO> listarTodos() {
@@ -208,6 +267,7 @@ public class UsuarioService {
                 usuario.getEmail(),
                 usuario.getHeadline(),
                 usuario.getBiografia(),
+                usuario.getFoto(),
                 usuario.getPerfilPublico(),
                 usuario.getRole(),
                 usuario.getCriadoEm()
