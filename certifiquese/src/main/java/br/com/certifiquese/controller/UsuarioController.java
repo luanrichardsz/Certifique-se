@@ -1,5 +1,6 @@
 package br.com.certifiquese.controller;
 
+import br.com.certifiquese.dto.AlterarSenhaRequestDTO;
 import br.com.certifiquese.dto.UsuarioRequestDTO;
 import br.com.certifiquese.dto.UsuarioResponseDTO;
 import br.com.certifiquese.dto.UsuarioUpdateDTO;
@@ -32,6 +33,12 @@ public class UsuarioController {
     @PutMapping("/me")
     public ResponseEntity<UsuarioResponseDTO> atualizar(@AuthenticationPrincipal Jwt jwt, @Valid @RequestBody UsuarioUpdateDTO dto) {
         return ResponseEntity.ok(usuarioService.atualizar(jwt, dto));
+    }
+
+    @PutMapping("/me/senha")
+    public ResponseEntity<Void> alterarSenha(@AuthenticationPrincipal Jwt jwt, @Valid @RequestBody AlterarSenhaRequestDTO dto) {
+        usuarioService.alterarSenha(jwt, dto);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping

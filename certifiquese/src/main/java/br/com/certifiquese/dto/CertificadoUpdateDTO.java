@@ -6,10 +6,10 @@ import java.util.List;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 public record CertificadoUpdateDTO(
-        
         @NotBlank(message = "A foto do certificado é obrigatória")
         String foto,
 
@@ -25,6 +25,22 @@ public record CertificadoUpdateDTO(
         LocalDate dataConclusao,
 
         @NotEmpty(message = "Informe pelo menos uma tag")
-        List<@NotBlank(message = "A tag não pode estar vazia") String> tags
+        List<@NotBlank(message = "A tag não pode estar vazia") String> tags,
+
+        @Positive(message = "A carga horária deve ser um número positivo")
+        Integer cargaHoraria,
+
+        @Size(max = 2000, message = "A descrição deve ter no máximo 2000 caracteres")
+        String descricao,
+
+        @Size(max = 500, message = "O link de validação deve ter no máximo 500 caracteres")
+        String linkValidacao,
+
+        Boolean publico
 ) implements HashCertificadoProvider {
+    public CertificadoUpdateDTO {
+        if (publico == null) {
+            publico = true;
+        }
+    }
 }

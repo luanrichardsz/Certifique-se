@@ -10,11 +10,14 @@ import br.com.certifiquese.model.CertificadoEntity;
 
 public interface CertificadoRepository extends JpaRepository<CertificadoEntity, Long>, JpaSpecificationExecutor<CertificadoEntity> {
 
-        Optional<CertificadoEntity> findByHashCertificado(String hashCertificado);
+    Optional<CertificadoEntity> findByHashCertificado(String hashCertificado);
 
-        // Verificação se já existe o hash do certificado cadastrado
-        boolean existsByHashCertificado(String hashCertificado);
+    // Verificação se já existe o hash do certificado cadastrado
+    boolean existsByHashCertificado(String hashCertificado);
 
-        // Buscar certificados por ID do usuário
-        List<CertificadoEntity> findByUsuarioIdUsuario(Long idUsuario);
+    // Buscar certificados por ID do usuário
+    List<CertificadoEntity> findByUsuarioIdUsuario(Long idUsuario);
+
+    // Buscar certificados públicos por username do usuário
+    List<CertificadoEntity> findByUsuarioUsernameAndPublicoTrue(String username);
 }

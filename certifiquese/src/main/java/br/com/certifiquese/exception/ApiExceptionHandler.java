@@ -60,4 +60,9 @@ public class ApiExceptionHandler {
     public ProblemDetail tratarEstadoInvalido(IllegalStateException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
     }
+
+    @ExceptionHandler(ArmazenamentoException.class)
+    public ProblemDetail tratarArmazenamento(ArmazenamentoException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, ex.getMessage());
+    }
 }

@@ -28,7 +28,7 @@ class UsuarioControllerTest {
 
     @Test
     void deveRetornar201AoCadastrarUsuario() {
-        var resposta = controller.cadastrar(new UsuarioRequestDTO("Usuário", "teste@exemplo.com", "senha123", "Bio"));
+        var resposta = controller.cadastrar(new UsuarioRequestDTO("Usuário", "teste@exemplo.com", "senha123", "usuario", "Headline", "Bio"));
 
         assertThat(resposta.getStatusCode().value()).isEqualTo(201);
         assertThat(resposta.getBody()).isNotNull();
@@ -42,7 +42,7 @@ class UsuarioControllerTest {
                 .claim("usuarioId", 7L)
                 .build();
 
-        var resposta = controller.atualizar(jwt, new UsuarioUpdateDTO("Novo Nome", "novo@exemplo.com", "Bio nova"));
+        var resposta = controller.atualizar(jwt, new UsuarioUpdateDTO("Novo Nome", "novo@exemplo.com", "novousername", "Headline nova", "Bio nova", true));
 
         assertThat(resposta.getStatusCode().value()).isEqualTo(200);
         assertThat(resposta.getBody()).isNotNull();
@@ -78,13 +78,13 @@ class UsuarioControllerTest {
         @Override
         public UsuarioResponseDTO cadastrar(UsuarioRequestDTO dto) {
             cadastro = dto;
-            return new UsuarioResponseDTO(1L, dto.nomeUsuario(), dto.email(), dto.biografia(), Role.USER, null);
+            return new UsuarioResponseDTO(1L, dto.nomeUsuario(), dto.username(), dto.email(), dto.headline(), dto.biografia(), true, Role.USER, null);
         }
 
         @Override
         public UsuarioResponseDTO atualizar(Jwt jwt, UsuarioUpdateDTO dto) {
             atualizacao = dto;
-            return new UsuarioResponseDTO(7L, dto.nomeUsuario(), dto.email(), dto.biografia(), Role.USER, null);
+            return new UsuarioResponseDTO(7L, dto.nomeUsuario(), dto.username(), dto.email(), dto.headline(), dto.biografia(), dto.perfilPublico(), Role.USER, null);
         }
 
         @Override

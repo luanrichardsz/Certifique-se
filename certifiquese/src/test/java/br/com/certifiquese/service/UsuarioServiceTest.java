@@ -13,15 +13,15 @@ import java.util.Map;
 import java.util.Optional;
 
 import br.com.certifiquese.dto.UsuarioUpdateDTO;
-import br.com.certifiquese.exception.RecursoNaoEncontradoException;
 import br.com.certifiquese.exception.RecursoEmConflitoException;
+import br.com.certifiquese.exception.RecursoNaoEncontradoException;
 import br.com.certifiquese.exception.SenhaIncorretaException;
 import br.com.certifiquese.model.CertificadoEntity;
 import br.com.certifiquese.model.Role;
 import br.com.certifiquese.model.UsuarioEntity;
 import br.com.certifiquese.repository.CertificadoRepository;
 import br.com.certifiquese.repository.UsuarioRepository;
-import br.com.certifiquese.service.storage.SupabaseStorageService;
+import br.com.certifiquese.service.storage.CertificadoStorage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -60,14 +60,24 @@ class UsuarioServiceTest {
                 return senhaValida;
             }
         };
-        SupabaseStorageService supabaseStorageService = new SupabaseStorageService("", "", "") {
+        CertificadoStorage certificadoStorage = new CertificadoStorage() {
             @Override
-            public void removerFoto(String foto) {
-                fotosRemovidas.add(foto);
+            public ImagemArmazenada armazenar(org.springframework.web.multipart.MultipartFile arquivo) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public ArquivoArmazenado buscar(String chave) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public void remover(String referencia) {
+                fotosRemovidas.add(referencia);
             }
         };
 
-        usuarioService = new UsuarioService(usuarioRepository, certificadoRepository, passwordEncoder, supabaseStorageService);
+        usuarioService = new UsuarioService(usuarioRepository, certificadoRepository, passwordEncoder, certificadoStorage);
     }
 
     @Test
@@ -115,7 +125,7 @@ class UsuarioServiceTest {
         UsuarioEntity usuario = novoUsuario(1L, "hash-senha");
         usuarios.put(1L, usuario);
 
-        var resposta = usuarioService.atualizar(jwtComUsuarioId(1L), new UsuarioUpdateDTO("Novo Nome", "novo@exemplo.com", "Nova bio"));
+        var resposta = usuarioService.atualizar(jwtComUsuarioId(1L), new UsuarioUpdateDTO("Novo Nome", "novo@exemplo.com", "novonome", "Headline", "Nova bio", true));
 
         assertThat(resposta.nomeUsuario()).isEqualTo("Novo Nome");
         assertThat(resposta.email()).isEqualTo("novo@exemplo.com");
@@ -131,7 +141,7 @@ class UsuarioServiceTest {
         usuarios.put(1L, usuario);
         usuarios.put(2L, outroUsuario);
 
-        assertThatThrownBy(() -> usuarioService.atualizar(jwtComUsuarioId(1L), new UsuarioUpdateDTO("Novo Nome", "novo@exemplo.com", "Nova bio")))
+        assertThatThrownBy(() -> usuarioService.atualizar(jwtComUsuarioId(1L), new UsuarioUpdateDTO("Novo Nome", "novo@exemplo.com", "novonome", "Headline", "Nova bio", true)))
                 .isInstanceOf(RecursoEmConflitoException.class);
     }
 
@@ -139,8 +149,11 @@ class UsuarioServiceTest {
         UsuarioEntity usuario = new UsuarioEntity();
         usuario.setIdUsuario(idUsuario);
         usuario.setNomeUsuario("Usuário Teste");
+        usuario.setUsername("usuario" + idUsuario);
         usuario.setEmail("teste@exemplo.com");
         usuario.setSenha(senhaHash);
+        usuario.setHeadline("Headline");
+        usuario.setPerfilPublico(true);
         usuario.setRole(Role.USER);
         usuario.setCriadoEm(LocalDateTime.now());
         return usuario;
@@ -178,6 +191,8 @@ class UsuarioServiceTest {
             case "existsByEmail" -> false;
             case "existsByEmailAndIdUsuarioNot" -> usuarios.values().stream()
                     .anyMatch(usuario -> usuario.getEmail().equals(args[0]) && !usuario.getIdUsuario().equals(args[1]));
+            case "existsByUsernameAndIdUsuarioNot" -> false;
+            case "existsByUsername" -> false;
             case "findAll" -> new ArrayList<>(usuarios.values());
             case "findByEmail" -> Optional.empty();
             default -> valorPadrao(method.getReturnType());

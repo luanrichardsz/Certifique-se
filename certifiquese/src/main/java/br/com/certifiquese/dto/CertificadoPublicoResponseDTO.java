@@ -3,8 +3,7 @@ package br.com.certifiquese.dto;
 import java.time.LocalDate;
 import java.util.List;
 
-public record CertificadoResponseDTO(
-        Long idCertificado,
+public record CertificadoPublicoResponseDTO(
         String hashCertificado,
         String foto,
         String nome,
@@ -13,7 +12,6 @@ public record CertificadoResponseDTO(
         List<String> tags,
         Integer cargaHoraria,
         String descricao,
-        String linkValidacao,
-        Boolean publico
+        String linkValidacao
 ) {
 }
