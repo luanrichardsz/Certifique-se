@@ -25,6 +25,12 @@ public record UsuarioUpdateDTO(
         @Size(max = 500, message = "A biografia deve ter no máximo 500 caracteres")
         String biografia,
 
-        Boolean perfilPublico
+        Boolean perfilPublico,
+
+        @Size(max = 500, message = "A URL da foto deve ter no máximo 500 caracteres")
+        String foto
 ) {
+    public UsuarioUpdateDTO(String nomeUsuario, String email, String username, String headline, String biografia, Boolean perfilPublico) {
+        this(nomeUsuario, email, username, headline, biografia, perfilPublico, null);
+    }
 }

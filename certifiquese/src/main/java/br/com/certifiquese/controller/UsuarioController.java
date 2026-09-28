@@ -41,6 +41,18 @@ public class UsuarioController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping(value = "/me/foto", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<UsuarioResponseDTO> atualizarFoto(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam("arquivo") org.springframework.web.multipart.MultipartFile arquivo) {
+        return ResponseEntity.ok(usuarioService.atualizarFoto(jwt, arquivo));
+    }
+
+    @DeleteMapping("/me/foto")
+    public ResponseEntity<UsuarioResponseDTO> removerFoto(@AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(usuarioService.removerFoto(jwt));
+    }
+
     @GetMapping
     public ResponseEntity<List<UsuarioResponseDTO>> listarTodos() {
         List<UsuarioResponseDTO> usuarios = usuarioService.listarTodos();

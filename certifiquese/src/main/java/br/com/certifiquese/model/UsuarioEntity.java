@@ -28,6 +28,9 @@ public class UsuarioEntity {
 
     private String biografia;
 
+    @Column(length = 500)
+    private String foto;
+
     @Column(nullable = false, unique = true)
     private String email;
 
@@ -58,7 +61,6 @@ public class UsuarioEntity {
         if (perfilPublico == null) {
             perfilPublico = true;
         }
-
         criadoEm = LocalDateTime.now();
     }
 }

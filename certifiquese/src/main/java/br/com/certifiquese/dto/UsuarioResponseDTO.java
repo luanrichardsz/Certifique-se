@@ -11,6 +11,7 @@ public record UsuarioResponseDTO(
         String email,
         String headline,
         String biografia,
+        String foto,
         Boolean perfilPublico,
         Role role,
         LocalDateTime criadoEm

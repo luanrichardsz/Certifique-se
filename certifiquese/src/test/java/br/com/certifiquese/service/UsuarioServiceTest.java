@@ -24,6 +24,7 @@ import br.com.certifiquese.repository.UsuarioRepository;
 import br.com.certifiquese.service.storage.CertificadoStorage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 
@@ -62,8 +63,8 @@ class UsuarioServiceTest {
         };
         CertificadoStorage certificadoStorage = new CertificadoStorage() {
             @Override
-            public ImagemArmazenada armazenar(org.springframework.web.multipart.MultipartFile arquivo) {
-                throw new UnsupportedOperationException();
+            public ImagemArmazenada armazenar(org.springframework.web.multipart.MultipartFile arquivo, String prefixo) {
+                return new ImagemArmazenada(prefixo + "-123.jpg", "/certificados/imagens/" + prefixo + "-123.jpg");
             }
 
             @Override
@@ -143,6 +144,31 @@ class UsuarioServiceTest {
 
         assertThatThrownBy(() -> usuarioService.atualizar(jwtComUsuarioId(1L), new UsuarioUpdateDTO("Novo Nome", "novo@exemplo.com", "novonome", "Headline", "Nova bio", true)))
                 .isInstanceOf(RecursoEmConflitoException.class);
+    }
+
+    @Test
+    void deveAtualizarFotoDePerfilDoUsuario() {
+        UsuarioEntity usuario = novoUsuario(1L, "hash-senha");
+        usuarios.put(1L, usuario);
+
+        MockMultipartFile arquivo = new MockMultipartFile("arquivo", "foto.png", "image/png", new byte[]{1, 2, 3});
+        var resposta = usuarioService.atualizarFoto(jwtComUsuarioId(1L), arquivo);
+
+        assertThat(resposta.foto()).isEqualTo("/certificados/imagens/perfil-123.jpg");
+        assertThat(usuarios.get(1L).getFoto()).isEqualTo("/certificados/imagens/perfil-123.jpg");
+    }
+
+    @Test
+    void deveRemoverFotoDePerfilDoUsuario() {
+        UsuarioEntity usuario = novoUsuario(1L, "hash-senha");
+        usuario.setFoto("/certificados/imagens/perfil-antigo.jpg");
+        usuarios.put(1L, usuario);
+
+        var resposta = usuarioService.removerFoto(jwtComUsuarioId(1L));
+
+        assertThat(resposta.foto()).isNull();
+        assertThat(usuarios.get(1L).getFoto()).isNull();
+        assertThat(fotosRemovidas).contains("/certificados/imagens/perfil-antigo.jpg");
     }
 
     private UsuarioEntity novoUsuario(Long idUsuario, String senhaHash) {
