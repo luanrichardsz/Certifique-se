@@ -22,6 +22,13 @@ public class ApiExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
     }
 
+    @ExceptionHandler(LimitePlanoExcedidoException.class)
+    public ProblemDetail tratarLimitePlanoExcedido(LimitePlanoExcedidoException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problemDetail.setProperty("mensagem", ex.getMessage());
+        return problemDetail;
+    }
+
     @ExceptionHandler({SenhaIncorretaException.class, OperacaoNaoPermitidaException.class})
     public ProblemDetail tratarAcessoNegado(RuntimeException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
