@@ -12,9 +12,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import br.com.certifiquese.dto.CertificadoRequestDTO;
 import br.com.certifiquese.dto.CertificadoUpdateDTO;
+import br.com.certifiquese.exception.LimitePlanoExcedidoException;
 import br.com.certifiquese.exception.OperacaoNaoPermitidaException;
 import br.com.certifiquese.model.CertificadoEntity;
+import br.com.certifiquese.model.Role;
 import br.com.certifiquese.model.UsuarioEntity;
 import br.com.certifiquese.repository.CertificadoRepository;
 import br.com.certifiquese.repository.UsuarioRepository;
@@ -56,6 +59,107 @@ class CertificadoServiceTest {
                 .isInstanceOf(OperacaoNaoPermitidaException.class);
     }
 
+    @Test
+    void deveBloquearCadastroQuandoAtingirLimiteTotal15Certificados() {
+        certificadosPorHash.clear();
+        for (int i = 1; i <= 15; i++) {
+            certificadosPorHash.put("hash-" + i, novoCertificado((long) i, "hash-" + i, 1L));
+        }
+
+        CertificadoRequestDTO dto = new CertificadoRequestDTO("foto", "Certificado 16", "Empresa", LocalDate.of(2024, 1, 1), List.of("tag"), 10, "Desc", "http://link", false);
+
+        assertThatThrownBy(() -> certificadoService.cadastrar(1L, dto))
+                .isInstanceOf(LimitePlanoExcedidoException.class)
+                .hasMessageContaining("limite de 15 certificados do plano gratuito");
+    }
+
+    @Test
+    void deveBloquearCadastroQuandoAtingirLimite8CertificadosPublicos() {
+        certificadosPorHash.clear();
+        for (int i = 1; i <= 8; i++) {
+            CertificadoEntity cert = novoCertificado((long) i, "hash-" + i, 1L);
+            cert.setPublico(true);
+            certificadosPorHash.put("hash-" + i, cert);
+        }
+
+        CertificadoRequestDTO dto = new CertificadoRequestDTO("foto", "Certificado 9", "Empresa", LocalDate.of(2024, 1, 1), List.of("tag"), 10, "Desc", "http://link", true);
+
+        assertThatThrownBy(() -> certificadoService.cadastrar(1L, dto))
+                .isInstanceOf(LimitePlanoExcedidoException.class)
+                .hasMessageContaining("limite de 8 certificados públicos no plano gratuito");
+    }
+
+    @Test
+    void devePermitirCadastrarPrivadoQuandoAtingir8PublicosMasMenosDe15Totais() {
+        certificadosPorHash.clear();
+        for (int i = 1; i <= 8; i++) {
+            CertificadoEntity cert = novoCertificado((long) i, "hash-" + i, 1L);
+            cert.setPublico(true);
+            certificadosPorHash.put("hash-" + i, cert);
+        }
+
+        CertificadoRequestDTO dto = new CertificadoRequestDTO("foto-privada", "Certificado Privado", "Empresa", LocalDate.of(2024, 1, 1), List.of("tag"), 10, "Desc", "http://link", false);
+
+        var resposta = certificadoService.cadastrar(1L, dto);
+        assertThat(resposta.nome()).isEqualTo("Certificado Privado");
+        assertThat(resposta.publico()).isFalse();
+    }
+
+    @Test
+    void deveBloquearAtualizacaoParaPublicoQuandoJaPossuir8Publicos() {
+        certificadosPorHash.clear();
+        for (int i = 1; i <= 8; i++) {
+            CertificadoEntity cert = novoCertificado((long) i, "hash-" + i, 1L);
+            cert.setPublico(true);
+            certificadosPorHash.put("hash-" + i, cert);
+        }
+
+        CertificadoEntity certPrivado = novoCertificado(9L, "hash-privado", 1L);
+        certPrivado.setPublico(false);
+        certificadosPorHash.put("hash-privado", certPrivado);
+
+        CertificadoUpdateDTO dto = new CertificadoUpdateDTO("foto-nova", "Certificado Tornando Publico", "Empresa", LocalDate.of(2024, 1, 1), List.of("tag"), 10, "Desc", "http://link", true);
+
+        assertThatThrownBy(() -> certificadoService.atualizar(1L, "hash-privado", dto))
+                .isInstanceOf(LimitePlanoExcedidoException.class)
+                .hasMessageContaining("limite de 8 certificados públicos no plano gratuito");
+    }
+
+    @Test
+    void devePermitirAtualizarCertificadoJaPublicoMesmoCom8Publicos() {
+        certificadosPorHash.clear();
+        for (int i = 1; i <= 8; i++) {
+            CertificadoEntity cert = novoCertificado((long) i, "hash-" + i, 1L);
+            cert.setPublico(true);
+            certificadosPorHash.put("hash-" + i, cert);
+        }
+
+        CertificadoUpdateDTO dto = new CertificadoUpdateDTO("foto-editada", "Nome Editado", "Empresa", LocalDate.of(2024, 1, 1), List.of("tag"), 10, "Desc", "http://link", true);
+
+        var resposta = certificadoService.atualizar(1L, "hash-1", dto);
+        assertThat(resposta.nome()).isEqualTo("Nome Editado");
+        assertThat(resposta.publico()).isTrue();
+    }
+
+    @Test
+    void adminNaoDeveTerLimiteDeCertificados() {
+        UsuarioEntity admin = novoUsuario(99L);
+        admin.setRole(Role.ADMIN);
+        usuariosPorId.put(99L, admin);
+
+        certificadosPorHash.clear();
+        for (int i = 1; i <= 20; i++) {
+            CertificadoEntity cert = novoCertificado((long) i, "hash-" + i, 99L);
+            cert.setPublico(true);
+            certificadosPorHash.put("hash-" + i, cert);
+        }
+
+        CertificadoRequestDTO dto = new CertificadoRequestDTO("foto-admin", "Certificado Admin", "Empresa", LocalDate.of(2024, 1, 1), List.of("tag"), 10, "Desc", "http://link", true);
+
+        var resposta = certificadoService.cadastrar(99L, dto);
+        assertThat(resposta.nome()).isEqualTo("Certificado Admin");
+    }
+
     private UsuarioEntity novoUsuario(Long idUsuario) {
         UsuarioEntity usuario = new UsuarioEntity();
         usuario.setIdUsuario(idUsuario);
@@ -92,6 +196,18 @@ class CertificadoServiceTest {
                 certificadosPorHash.values().removeIf(item -> item.getIdCertificado().equals(certificado.getIdCertificado()));
                 certificadosPorHash.put(certificado.getHashCertificado(), certificado);
                 yield certificado;
+            }
+            case "countByUsuarioIdUsuario" -> {
+                Long id = (Long) args[0];
+                yield certificadosPorHash.values().stream()
+                        .filter(c -> c.getUsuario() != null && id.equals(c.getUsuario().getIdUsuario()))
+                        .count();
+            }
+            case "countByUsuarioIdUsuarioAndPublicoTrue" -> {
+                Long id = (Long) args[0];
+                yield certificadosPorHash.values().stream()
+                        .filter(c -> c.getUsuario() != null && id.equals(c.getUsuario().getIdUsuario()) && Boolean.TRUE.equals(c.getPublico()))
+                        .count();
             }
             case "findAll" -> new ArrayList<>(certificadosPorHash.values());
             default -> valorPadrao(method.getReturnType());

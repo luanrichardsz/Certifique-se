@@ -23,10 +23,12 @@ import br.com.certifiquese.dto.CertificadoRequestDTO;
 import br.com.certifiquese.dto.CertificadoResponseDTO;
 import br.com.certifiquese.dto.CertificadoUpdateDTO;
 import br.com.certifiquese.dto.HashCertificadoProvider;
+import br.com.certifiquese.exception.LimitePlanoExcedidoException;
 import br.com.certifiquese.exception.OperacaoNaoPermitidaException;
 import br.com.certifiquese.exception.RecursoEmConflitoException;
 import br.com.certifiquese.exception.RecursoNaoEncontradoException;
 import br.com.certifiquese.model.CertificadoEntity;
+import br.com.certifiquese.model.Role;
 import br.com.certifiquese.model.UsuarioEntity;
 import br.com.certifiquese.repository.CertificadoRepository;
 import br.com.certifiquese.repository.UsuarioRepository;
@@ -35,6 +37,18 @@ import br.com.certifiquese.service.storage.CertificadoStorage;
 
 @Service
 public class CertificadoService {
+
+    public static final int LIMITE_TOTAL_GRATUITO = 15;
+    public static final int LIMITE_PUBLICOS_GRATUITO = 8;
+
+    public static final String MENSAGEM_LIMITE_TOTAL_GRATUITO =
+            "Você atingiu o limite de " + LIMITE_TOTAL_GRATUITO + " certificados do plano gratuito. Estamos preparando novidades para as próximas atualizações, onde você poderá cadastrar certificados ilimitados!";
+
+    public static final String MENSAGEM_LIMITE_PUBLICOS_GRATUITO =
+            "Você atingiu o limite de " + LIMITE_PUBLICOS_GRATUITO + " certificados públicos no plano gratuito. Em breve, você poderá destacar ainda mais conquistas no seu portfólio público!";
+
+    public static final String MENSAGEM_LIMITE_PUBLICOS_EDICAO_GRATUITO =
+            "Você atingiu o limite de " + LIMITE_PUBLICOS_GRATUITO + " certificados públicos no plano gratuito. Para destacar este certificado, alterne a visibilidade de outro ou aguarde as próximas atualizações!";
 
     private static final Logger log = LoggerFactory.getLogger(CertificadoService.class);
     
@@ -52,14 +66,16 @@ public class CertificadoService {
 
     @Transactional
     public CertificadoResponseDTO cadastrar(Long idUsuario, CertificadoRequestDTO dto) {
+        UsuarioEntity usuario = usuarioRepository.findById(idUsuario)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado."));
+
+        validarLimitesPlanoAoCadastrar(usuario, dto);
+
         String hashCertificado = gerarHashCertificado((HashCertificadoProvider) dto);
 
         if (certificadoRepository.existsByHashCertificado(hashCertificado)) {
             throw new RecursoEmConflitoException("Já existe um certificado cadastrado com este hash.");
         }
-
-        UsuarioEntity usuario = usuarioRepository.findById(idUsuario)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado."));
 
         CertificadoEntity certificado = new CertificadoEntity();
         certificado.setHashCertificado(hashCertificado);
@@ -87,6 +103,8 @@ public class CertificadoService {
         if (!certificado.getUsuario().getIdUsuario().equals(idUsuario)) {
             throw new OperacaoNaoPermitidaException("O usuário não tem permissão para editar este certificado.");
         }
+
+        validarLimitesPlanoAoAtualizar(certificado, dto);
 
         String novoHashCertificado = gerarHashCertificado((HashCertificadoProvider) dto);
         if (!hashCertificado.equals(novoHashCertificado) && certificadoRepository.existsByHashCertificado(novoHashCertificado)) {
@@ -180,6 +198,7 @@ public class CertificadoService {
 
         List<CertificadoEntity> publicos = certificadoRepository.findByUsuarioUsernameAndPublicoTrue(usernameNormalizado);
         return publicos.stream()
+                .limit(LIMITE_PUBLICOS_GRATUITO)
                 .map(this::toPublicoResponseDTO)
                 .toList();
     }
@@ -197,6 +216,41 @@ public class CertificadoService {
 
         certificadoRepository.delete(certificado);
         registrarRemocaoDeImagem(certificado.getFoto());
+    }
+
+    private void validarLimitesPlanoAoCadastrar(UsuarioEntity usuario, CertificadoRequestDTO dto) {
+        if (usuario.getRole() == Role.ADMIN) {
+            return;
+        }
+
+        long totalCertificados = certificadoRepository.countByUsuarioIdUsuario(usuario.getIdUsuario());
+        if (totalCertificados >= LIMITE_TOTAL_GRATUITO) {
+            throw new LimitePlanoExcedidoException(MENSAGEM_LIMITE_TOTAL_GRATUITO);
+        }
+
+        boolean seraPublico = dto.publico() == null || Boolean.TRUE.equals(dto.publico());
+        if (seraPublico) {
+            long totalPublicos = certificadoRepository.countByUsuarioIdUsuarioAndPublicoTrue(usuario.getIdUsuario());
+            if (totalPublicos >= LIMITE_PUBLICOS_GRATUITO) {
+                throw new LimitePlanoExcedidoException(MENSAGEM_LIMITE_PUBLICOS_GRATUITO);
+            }
+        }
+    }
+
+    private void validarLimitesPlanoAoAtualizar(CertificadoEntity certificado, CertificadoUpdateDTO dto) {
+        if (certificado.getUsuario() != null && certificado.getUsuario().getRole() == Role.ADMIN) {
+            return;
+        }
+
+        boolean eraPublico = Boolean.TRUE.equals(certificado.getPublico());
+        boolean seraPublico = dto.publico() == null || Boolean.TRUE.equals(dto.publico());
+
+        if (!eraPublico && seraPublico) {
+            long totalPublicos = certificadoRepository.countByUsuarioIdUsuarioAndPublicoTrue(certificado.getUsuario().getIdUsuario());
+            if (totalPublicos >= LIMITE_PUBLICOS_GRATUITO) {
+                throw new LimitePlanoExcedidoException(MENSAGEM_LIMITE_PUBLICOS_EDICAO_GRATUITO);
+            }
+        }
     }
 
     private CertificadoResponseDTO toResponseDTO(CertificadoEntity certificado) {

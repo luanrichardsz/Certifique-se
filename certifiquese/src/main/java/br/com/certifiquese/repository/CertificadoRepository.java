@@ -20,4 +20,10 @@ public interface CertificadoRepository extends JpaRepository<CertificadoEntity, 
 
     // Buscar certificados públicos por username do usuário
     List<CertificadoEntity> findByUsuarioUsernameAndPublicoTrue(String username);
+
+    // Contagem de certificados totais por usuário
+    long countByUsuarioIdUsuario(Long idUsuario);
+
+    // Contagem de certificados públicos por usuário
+    long countByUsuarioIdUsuarioAndPublicoTrue(Long idUsuario);
 }
