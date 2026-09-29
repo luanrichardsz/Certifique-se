@@ -1,6 +1,8 @@
 package br.com.certifiquese.controller;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -35,5 +37,13 @@ public class PublicoController {
     public ResponseEntity<List<CertificadoPublicoResponseDTO>> listarCertificadosPublicos(@PathVariable String username) {
         List<CertificadoPublicoResponseDTO> certificados = certificadoService.listarPublicosPorUsername(username);
         return ResponseEntity.ok(certificados);
+    }
+
+    @GetMapping("/health")
+    public ResponseEntity<Map<String, String>> health() {
+        return ResponseEntity.ok(Map.of(
+                "status", "ok",
+                "timestamp", Instant.now().toString()
+        ));
     }
 }
