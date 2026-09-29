@@ -34,6 +34,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 public class UsuarioService {
 
     private static final Logger log = LoggerFactory.getLogger(UsuarioService.class);
+    private static final long TAMANHO_MAXIMO_FOTO_PERFIL = 3L * 1024 * 1024;
 
     private final UsuarioRepository usuarioRepository;
     private final CertificadoRepository certificadoRepository;
@@ -126,6 +127,10 @@ public class UsuarioService {
 
         if (arquivo == null || arquivo.isEmpty()) {
             throw new IllegalArgumentException("Selecione uma imagem para enviar.");
+        }
+
+        if (arquivo.getSize() > TAMANHO_MAXIMO_FOTO_PERFIL) {
+            throw new IllegalArgumentException("A foto de perfil deve ter no máximo 3MB.");
         }
 
         String fotoAntiga = usuario.getFoto();

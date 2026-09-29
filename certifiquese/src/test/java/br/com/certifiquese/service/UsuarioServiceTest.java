@@ -159,6 +159,19 @@ class UsuarioServiceTest {
     }
 
     @Test
+    void deveRejeitarFotoDePerfilMaiorQue3MB() {
+        UsuarioEntity usuario = novoUsuario(1L, "hash-senha");
+        usuarios.put(1L, usuario);
+
+        byte[] dadosGrandes = new byte[3 * 1024 * 1024 + 1];
+        MockMultipartFile arquivoGrande = new MockMultipartFile("arquivo", "foto.png", "image/png", dadosGrandes);
+
+        assertThatThrownBy(() -> usuarioService.atualizarFoto(jwtComUsuarioId(1L), arquivoGrande))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("A foto de perfil deve ter no máximo 3MB.");
+    }
+
+    @Test
     void deveRemoverFotoDePerfilDoUsuario() {
         UsuarioEntity usuario = novoUsuario(1L, "hash-senha");
         usuario.setFoto("/certificados/imagens/perfil-antigo.jpg");

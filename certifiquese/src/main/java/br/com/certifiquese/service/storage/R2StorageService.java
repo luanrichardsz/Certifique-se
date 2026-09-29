@@ -28,7 +28,8 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 public class R2StorageService implements CertificadoStorage {
 
     private static final Logger log = LoggerFactory.getLogger(R2StorageService.class);
-    private static final long TAMANHO_MAXIMO = 5L * 1024 * 1024;
+    private static final long TAMANHO_MAXIMO_CERTIFICADO = 5L * 1024 * 1024;
+    private static final long TAMANHO_MAXIMO_PERFIL = 3L * 1024 * 1024;
     private static final String ROTA_PUBLICA = "/certificados/imagens/";
     private static final Map<String, String> EXTENSOES_PERMITIDAS = Map.of(
             "image/jpeg", ".jpg",
@@ -128,14 +129,19 @@ public class R2StorageService implements CertificadoStorage {
         if (arquivo == null || arquivo.isEmpty()) {
             throw new IllegalArgumentException("Selecione uma imagem para enviar.");
         }
-        if (arquivo.getSize() > TAMANHO_MAXIMO) {
+        boolean isPerfil = "perfil".equalsIgnoreCase(prefixo);
+        long limiteMaximo = isPerfil ? TAMANHO_MAXIMO_PERFIL : TAMANHO_MAXIMO_CERTIFICADO;
+        if (arquivo.getSize() > limiteMaximo) {
+            if (isPerfil) {
+                throw new IllegalArgumentException("A foto de perfil deve ter no máximo 3MB.");
+            }
             throw new IllegalArgumentException("A imagem deve ter no máximo 5 MB.");
         }
         String contentType = arquivo.getContentType();
         if (!EXTENSOES_PERMITIDAS.containsKey(contentType)) {
             throw new IllegalArgumentException("Formato de imagem inválido. Use JPEG, PNG, WebP ou PDF.");
         }
-        if ("perfil".equalsIgnoreCase(prefixo) && "application/pdf".equals(contentType)) {
+        if (isPerfil && "application/pdf".equals(contentType)) {
             throw new IllegalArgumentException("A foto de perfil deve ser uma imagem (JPEG, PNG ou WebP).");
         }
     }
