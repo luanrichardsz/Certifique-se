@@ -122,10 +122,8 @@ public class GeminiService {
                     log.info("Tentando extrair dados do certificado com o modelo: {}", currentModel);
 
                     String responseBody = restClient.post()
-                            .uri(uriBuilder -> uriBuilder
-                                    .path("/models/{model}:generateContent")
-                                    .queryParam("key", apiKey)
-                                    .build(currentModel))
+                            .uri("/models/{model}:generateContent", currentModel)
+                            .header("x-goog-api-key", apiKey)
                             .contentType(MediaType.APPLICATION_JSON)
                             .body(payload)
                             .retrieve()
@@ -268,13 +266,13 @@ public class GeminiService {
             String conteudoJson = textNode.asText();
             JsonNode dados = objectMapper.readTree(conteudoJson);
 
-            String nome = normalizarNomeCurso(extrairTexto(dados, "nome"));
-            String empresa = extrairTexto(dados, "empresa");
+            String nome = normalizarNomeCurso(extrairTexto(dados, "nome", 150));
+            String empresa = extrairTexto(dados, "empresa", 150);
             LocalDate dataConclusao = extrairData(dados, "dataConclusao");
             Integer cargaHoraria = extrairInteiro(dados, "cargaHoraria");
             List<String> tags = extrairListaString(dados, "tags");
-            String descricao = extrairTexto(dados, "descricao");
-            String linkValidacao = normalizarLinkValidacao(extrairTexto(dados, "linkValidacao"));
+            String descricao = extrairTexto(dados, "descricao", 2000);
+            String linkValidacao = normalizarLinkValidacao(extrairTexto(dados, "linkValidacao", 500));
 
             return new CertificadoExtracaoResponseDTO(
                     nome,
@@ -325,14 +323,28 @@ public class GeminiService {
             return null;
         }
 
+        if (limpo.length() > 150) {
+            limpo = limpo.substring(0, 150).trim();
+        }
+
         return limpo;
     }
 
     private String extrairTexto(JsonNode node, String campo) {
+        return extrairTexto(node, campo, 0);
+    }
+
+    private String extrairTexto(JsonNode node, String campo, int maxLength) {
         JsonNode campoNode = node.get(campo);
         if (campoNode != null && !campoNode.isNull()) {
             String texto = campoNode.asText().trim();
-            return texto.isBlank() ? null : texto;
+            if (texto.isBlank()) {
+                return null;
+            }
+            if (maxLength > 0 && texto.length() > maxLength) {
+                return texto.substring(0, maxLength).trim();
+            }
+            return texto;
         }
         return null;
     }
