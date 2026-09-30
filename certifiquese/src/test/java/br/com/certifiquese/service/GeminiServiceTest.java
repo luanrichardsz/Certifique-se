@@ -13,7 +13,7 @@ class GeminiServiceTest {
     @Test
     @DisplayName("Deve retornar DTO vazio quando arquivo for nulo ou vazio")
     void deveRetornarVazioQuandoArquivoForVazio() {
-        GeminiService service = new GeminiService("chave-fake", "gemini-2.5-flash");
+        GeminiService service = new GeminiService("chave-fake", "gemini-3.8-flash");
         MockMultipartFile arquivoVazio = new MockMultipartFile("arquivo", new byte[0]);
 
         CertificadoExtracaoResponseDTO resultado = service.extrairDados(arquivoVazio, "chave-123", "/url/123");
@@ -27,7 +27,7 @@ class GeminiServiceTest {
     @Test
     @DisplayName("Deve retornar DTO vazio quando tipo de arquivo não for permitido")
     void deveRetornarVazioQuandoTipoArquivoNaoPermitido() {
-        GeminiService service = new GeminiService("chave-fake", "gemini-2.5-flash");
+        GeminiService service = new GeminiService("chave-fake", "gemini-3.8-flash");
         MockMultipartFile arquivoTexto = new MockMultipartFile(
                 "arquivo", "doc.txt", "text/plain", "conteudo".getBytes()
         );
@@ -41,7 +41,7 @@ class GeminiServiceTest {
     @Test
     @DisplayName("Deve retornar DTO vazio quando API key estiver em branco")
     void deveRetornarVazioQuandoApiKeyEmBranco() {
-        GeminiService service = new GeminiService("", "gemini-2.5-flash");
+        GeminiService service = new GeminiService("", "gemini-3.8-flash");
         MockMultipartFile arquivo = new MockMultipartFile(
                 "arquivo", "cert.png", "image/png", "conteudo-fake".getBytes()
         );

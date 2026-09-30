@@ -44,11 +44,11 @@ public class GeminiService {
 
     public GeminiService(
             @Value("${gemini.api-key:}") String apiKey,
-            @Value("${gemini.model:gemini-2.5-flash}") String model) {
+            @Value("${gemini.model:gemini-3.8-flash}") String model) {
 
         this.objectMapper = new ObjectMapper().findAndRegisterModules();
         this.apiKey = apiKey != null ? apiKey.trim() : "";
-        this.model = model != null ? model.trim() : "gemini-2.5-flash";
+        this.model = model != null ? model.trim() : "gemini-3.8-flash";
 
         JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(
                 HttpClient.newBuilder()
@@ -118,7 +118,9 @@ public class GeminiService {
                 - 'cargaHoraria': Quantidade total de horas do curso em número inteiro (ex: '40 horas' -> 40). Apenas o número.
                 - 'tags': Lista de 2 a 6 palavras-chave ou tecnologias principais identificadas no curso/ementa (ex: ['Java', 'Spring Boot', 'Backend']).
                 - 'descricao': Breve descrição dos tópicos e ementa abordados no curso que constem no certificado.
-                - 'linkValidacao': URL para verificação de autenticidade ou código alfanumérico/chave de validação do certificado (ex: 'https://...' ou '8F9A-B23C').
+                - 'linkValidacao': URL web de validação de autenticidade (ex: 'https://...', 'www...').
+                  * Extraia APENAS se houver uma URL ou link web explícito no certificado.
+                  * Se o certificado tiver apenas um código alfanumérico ou hash sem nenhuma URL ou site, retorne null.
                 """;
 
         Map<String, Object> schema = Map.of(
@@ -130,7 +132,7 @@ public class GeminiService {
                         "cargaHoraria", Map.of("type", "INTEGER", "description", "Carga horária total em horas inteiras"),
                         "tags", Map.of("type", "ARRAY", "items", Map.of("type", "STRING"), "description", "Tecnologias ou tópicos abordados"),
                         "descricao", Map.of("type", "STRING", "description", "Descrição concisa dos tópicos ou ementa"),
-                        "linkValidacao", Map.of("type", "STRING", "description", "Link ou código de validação de autenticidade")
+                        "linkValidacao", Map.of("type", "STRING", "description", "URL completa e navegável de verificação de autenticidade (ex: https://...)")
                 )
         );
 
@@ -178,7 +180,7 @@ public class GeminiService {
             Integer cargaHoraria = extrairInteiro(dados, "cargaHoraria");
             List<String> tags = extrairListaString(dados, "tags");
             String descricao = extrairTexto(dados, "descricao");
-            String linkValidacao = extrairTexto(dados, "linkValidacao");
+            String linkValidacao = normalizarLinkValidacao(extrairTexto(dados, "linkValidacao"));
 
             return new CertificadoExtracaoResponseDTO(
                     nome,
@@ -235,5 +237,26 @@ public class GeminiService {
             return objectMapper.convertValue(arrayNode, objectMapper.getTypeFactory().constructCollectionType(List.class, String.class));
         }
         return List.of();
+    }
+
+    private String normalizarLinkValidacao(String link) {
+        if (link == null || link.isBlank()) {
+            return null;
+        }
+
+        String valor = link.trim();
+
+        // Se já for uma URL completa
+        if (valor.startsWith("http://") || valor.startsWith("https://")) {
+            return valor;
+        }
+
+        // Se for um link web (começa com www ou contém formato de domínio ex: dio.me/..., alura.com.br/...)
+        if (valor.startsWith("www.") || valor.matches("(?i).*\\.(com|org|net|me|io|edu|gov|app|dev|br)(/.*)?$")) {
+            return "https://" + valor;
+        }
+
+        // Se for apenas um código ou hash solto sem características de link, deixa em branco (null)
+        return null;
     }
 }
