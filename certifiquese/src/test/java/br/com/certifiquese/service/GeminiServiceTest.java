@@ -51,4 +51,28 @@ class GeminiServiceTest {
         assertThat(resultado.fotoChave()).isEqualTo("chave-123");
         assertThat(resultado.nome()).isNull();
     }
+
+    @Test
+    @DisplayName("Deve configurar cadeia de fallback padrão com 3.8-flash, 3.5-flash e 3.5-flash-lite")
+    void deveConfigurarCadeiaDeFallbackPadrao() {
+        GeminiService service = new GeminiService("chave-fake", "gemini-3.8-flash");
+
+        assertThat(service.getModelsChain()).containsExactly(
+                "gemini-3.8-flash",
+                "gemini-3.5-flash",
+                "gemini-3.5-flash-lite"
+        );
+    }
+
+    @Test
+    @DisplayName("Deve manter modelo customizado no início da cadeia de fallback sem duplicatas")
+    void deveManterModeloCustomizadoNoInicioDaCadeia() {
+        GeminiService service = new GeminiService("chave-fake", "gemini-3.5-flash");
+
+        assertThat(service.getModelsChain()).containsExactly(
+                "gemini-3.5-flash",
+                "gemini-3.8-flash",
+                "gemini-3.5-flash-lite"
+        );
+    }
 }

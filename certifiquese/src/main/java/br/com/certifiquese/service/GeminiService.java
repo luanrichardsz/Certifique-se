@@ -6,16 +6,19 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.Base64;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.multipart.MultipartFile;
@@ -37,30 +40,58 @@ public class GeminiService {
             "application/pdf"
     );
 
+    private static final List<String> DEFAULT_FALLBACK_CHAIN = List.of(
+            "gemini-3.8-flash",
+            "gemini-3.5-flash",
+            "gemini-3.5-flash-lite"
+    );
+
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
     private final String apiKey;
-    private final String model;
+    private final List<String> modelsChain;
 
+    @Autowired
     public GeminiService(
             @Value("${gemini.api-key:}") String apiKey,
             @Value("${gemini.model:gemini-3.8-flash}") String model) {
+        this(apiKey, model, null);
+    }
+
+    public GeminiService(
+            String apiKey,
+            String primaryModel,
+            List<String> customChain) {
 
         this.objectMapper = new ObjectMapper().findAndRegisterModules();
         this.apiKey = apiKey != null ? apiKey.trim() : "";
-        this.model = model != null ? model.trim() : "gemini-3.8-flash";
+
+        if (customChain != null && !customChain.isEmpty()) {
+            this.modelsChain = List.copyOf(customChain);
+        } else {
+            Set<String> chain = new LinkedHashSet<>();
+            if (primaryModel != null && !primaryModel.isBlank()) {
+                chain.add(primaryModel.trim());
+            }
+            chain.addAll(DEFAULT_FALLBACK_CHAIN);
+            this.modelsChain = List.copyOf(chain);
+        }
 
         JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(
                 HttpClient.newBuilder()
                         .connectTimeout(Duration.ofSeconds(10))
                         .build()
         );
-        requestFactory.setReadTimeout(Duration.ofSeconds(30));
+        requestFactory.setReadTimeout(Duration.ofSeconds(20));
 
         this.restClient = RestClient.builder()
                 .requestFactory(requestFactory)
                 .baseUrl("https://generativelanguage.googleapis.com/v1beta")
                 .build();
+    }
+
+    public List<String> getModelsChain() {
+        return modelsChain;
     }
 
     public CertificadoExtracaoResponseDTO extrairDados(MultipartFile arquivo, String fotoChave, String fotoUrl) {
@@ -83,22 +114,60 @@ public class GeminiService {
             String base64Data = Base64.getEncoder().encodeToString(arquivo.getBytes());
             Map<String, Object> payload = montarPayload(base64Data, contentType);
 
-            String responseBody = restClient.post()
-                    .uri(uriBuilder -> uriBuilder
-                            .path("/models/{model}:generateContent")
-                            .queryParam("key", apiKey)
-                            .build(model))
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(payload)
-                    .retrieve()
-                    .body(String.class);
+            for (int i = 0; i < modelsChain.size(); i++) {
+                String currentModel = modelsChain.get(i);
+                boolean hasNextModel = (i < modelsChain.size() - 1);
 
-            return processarResposta(responseBody, fotoChave, fotoUrl);
+                try {
+                    log.info("Tentando extrair dados do certificado com o modelo: {}", currentModel);
 
-        } catch (RestClientResponseException ex) {
-            log.error("Erro retornado pela API do Gemini. Status: {}, Resposta: {}",
-                    ex.getStatusCode(), ex.getResponseBodyAsString());
+                    String responseBody = restClient.post()
+                            .uri(uriBuilder -> uriBuilder
+                                    .path("/models/{model}:generateContent")
+                                    .queryParam("key", apiKey)
+                                    .build(currentModel))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .body(payload)
+                            .retrieve()
+                            .body(String.class);
+
+                    CertificadoExtracaoResponseDTO resposta = processarResposta(responseBody, fotoChave, fotoUrl);
+                    log.info("Extração de dados concluída com sucesso com o modelo '{}'.", currentModel);
+                    return resposta;
+
+                } catch (RestClientResponseException ex) {
+                    int statusCode = ex.getStatusCode().value();
+                    boolean isTransientError = (statusCode == 503 || statusCode == 429 || statusCode == 500 || statusCode == 404);
+
+                    if (isTransientError && hasNextModel) {
+                        String nextModel = modelsChain.get(i + 1);
+                        log.warn("Modelo '{}' retornou status {}. Acionando fallback imediatamente para o modelo '{}'.",
+                                currentModel, statusCode, nextModel);
+                        continue;
+                    }
+
+                    log.error("Erro retornado pela API do Gemini no modelo '{}'. Status: {}, Resposta: {}",
+                            currentModel, ex.getStatusCode(), ex.getResponseBodyAsString());
+
+                    if (!hasNextModel) {
+                        return CertificadoExtracaoResponseDTO.vazio(fotoChave, fotoUrl);
+                    }
+                } catch (ResourceAccessException ex) {
+                    if (hasNextModel) {
+                        String nextModel = modelsChain.get(i + 1);
+                        log.warn("Falha de conexão/timeout no modelo '{}' ({}). Acionando fallback imediatamente para '{}'.",
+                                currentModel, ex.getMessage(), nextModel);
+                        continue;
+                    }
+
+                    log.error("Erro de conexão/timeout com a API do Gemini no modelo final '{}': {}",
+                            currentModel, ex.getMessage());
+                    return CertificadoExtracaoResponseDTO.vazio(fotoChave, fotoUrl);
+                }
+            }
+
             return CertificadoExtracaoResponseDTO.vazio(fotoChave, fotoUrl);
+
         } catch (IOException ex) {
             log.error("Erro ao ler os bytes do arquivo para envio ao Gemini.", ex);
             return CertificadoExtracaoResponseDTO.vazio(fotoChave, fotoUrl);
