@@ -20,13 +20,15 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
+import br.com.certifiquese.dto.CertificadoExtracaoResponseDTO;
+import br.com.certifiquese.dto.CertificadoFiltroDTO;
 import br.com.certifiquese.dto.CertificadoRequestDTO;
 import br.com.certifiquese.dto.CertificadoResponseDTO;
 import br.com.certifiquese.dto.CertificadoUpdateDTO;
 import br.com.certifiquese.dto.ImagemUploadResponseDTO;
 import br.com.certifiquese.service.CertificadoService;
+import br.com.certifiquese.service.GeminiService;
 import br.com.certifiquese.service.storage.CertificadoStorage;
-import br.com.certifiquese.dto.CertificadoFiltroDTO;
 import jakarta.validation.Valid;
 
 @RestController
@@ -35,10 +37,21 @@ public class CertificadoController {
     
     private final CertificadoService certificadoService;
     private final CertificadoStorage certificadoStorage;
+    private final GeminiService geminiService;
 
-    public CertificadoController(CertificadoService certificadoService, CertificadoStorage certificadoStorage) {
+    public CertificadoController(CertificadoService certificadoService, CertificadoStorage certificadoStorage, GeminiService geminiService) {
         this.certificadoService = certificadoService;
         this.certificadoStorage = certificadoStorage;
+        this.geminiService = geminiService;
+    }
+
+    @PostMapping(value = "/extrair-dados", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<CertificadoExtracaoResponseDTO> extrairDados(@RequestParam("arquivo") MultipartFile arquivo) {
+        CertificadoStorage.ImagemArmazenada imagem = certificadoStorage.armazenar(arquivo);
+        CertificadoExtracaoResponseDTO resposta = geminiService != null
+                ? geminiService.extrairDados(arquivo, imagem.chave(), imagem.url())
+                : CertificadoExtracaoResponseDTO.vazio(imagem.chave(), imagem.url());
+        return ResponseEntity.ok(resposta);
     }
 
     @PostMapping(value = "/imagens", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

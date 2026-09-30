@@ -22,7 +22,7 @@ class CertificadoControllerTest {
     @BeforeEach
     void setUp() {
         certificadoService = new CertificadoServiceStub();
-        controller = new CertificadoController(certificadoService, new StorageStub());
+        controller = new CertificadoController(certificadoService, new StorageStub(), null);
     }
 
     @Test
@@ -49,6 +49,20 @@ class CertificadoControllerTest {
 
         assertThat(resposta.getStatusCode().value()).isEqualTo(200);
         assertThat(certificadoService.atualizacao.nome()).isEqualTo("Nome 2");
+    }
+
+    @Test
+    void deveRetornar200AoExtrairDadosDoCertificado() {
+        org.springframework.mock.web.MockMultipartFile arquivo = new org.springframework.mock.web.MockMultipartFile(
+                "arquivo", "certificado.png", "image/png", "conteudo-fake".getBytes()
+        );
+
+        var resposta = controller.extrairDados(arquivo);
+
+        assertThat(resposta.getStatusCode().value()).isEqualTo(200);
+        assertThat(resposta.getBody()).isNotNull();
+        assertThat(resposta.getBody().fotoChave()).isEqualTo("imagem.png");
+        assertThat(resposta.getBody().fotoUrl()).isEqualTo("/certificados/imagens/imagem.png");
     }
 
     private static final class CertificadoServiceStub extends CertificadoService {

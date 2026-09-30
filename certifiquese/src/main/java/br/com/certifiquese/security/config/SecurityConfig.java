@@ -28,9 +28,15 @@ import br.com.certifiquese.security.authentication.UsuarioDetailsService;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtException;
 
+import org.springframework.beans.factory.annotation.Value;
+import java.util.ArrayList;
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+	@Value("${app.frontend-url:}")
+	private String frontendUrl;
 
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http, DaoAuthenticationProvider authenticationProvider, UsuarioRepository usuarioRepository) throws Exception {
@@ -119,13 +125,22 @@ public class SecurityConfig {
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource() {
 		CorsConfiguration configuration = new CorsConfiguration();
-		configuration.setAllowedOriginPatterns(List.of(
+		List<String> origins = new ArrayList<>(List.of(
 				"http://localhost:*",
 				"http://127.0.0.1:*",
 				"https://*.github.io",
 				"https://certifique-se.app",
-				"https://*.certifique-se.app"
+				"https://*.certifique-se.app",
+				"https://*.vercel.app",
+				"https://*.onrender.com"
 		));
+		if (frontendUrl != null && !frontendUrl.isBlank()) {
+			String urlSemBarra = frontendUrl.trim().replaceAll("/+$", "");
+			if (!origins.contains(urlSemBarra)) {
+				origins.add(urlSemBarra);
+			}
+		}
+		configuration.setAllowedOriginPatterns(origins);
 		configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
 		configuration.setAllowedHeaders(List.of("*"));
 		configuration.setExposedHeaders(List.of("*"));
