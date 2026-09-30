@@ -75,4 +75,28 @@ class GeminiServiceTest {
                 "gemini-3.5-flash-lite"
         );
     }
+
+    @Test
+    @DisplayName("Deve rejeitar títulos genéricos e frases com nome do aluno como nome do curso")
+    void deveRejeitarFalsosPositivosNoNomeDoCurso() {
+        GeminiService service = new GeminiService("chave-fake", "gemini-3.8-flash");
+
+        // Falsos positivos clássicos que devem ser descartados (retornar null)
+        assertThat(service.normalizarNomeCurso("Certificado")).isNull();
+        assertThat(service.normalizarNomeCurso("CERTIFICADO DE CONCLUSÃO")).isNull();
+        assertThat(service.normalizarNomeCurso("Certificado de Participação")).isNull();
+        assertThat(service.normalizarNomeCurso("Diploma")).isNull();
+        assertThat(service.normalizarNomeCurso("Certificate of Completion")).isNull();
+        assertThat(service.normalizarNomeCurso("Certificamos que Luan da Silva concluiu o treinamento")).isNull();
+        assertThat(service.normalizarNomeCurso("Conferido a Maria Oliveira com louvor")).isNull();
+        assertThat(service.normalizarNomeCurso("This is to certify that John Doe has completed")).isNull();
+
+        // Nomes legítimos que devem ser preservados
+        assertThat(service.normalizarNomeCurso("Especialista Spring Boot 3 e Microserviços"))
+                .isEqualTo("Especialista Spring Boot 3 e Microserviços");
+        assertThat(service.normalizarNomeCurso("AWS Certified Solutions Architect"))
+                .isEqualTo("AWS Certified Solutions Architect");
+        assertThat(service.normalizarNomeCurso("Desenvolvimento Frontend com Angular"))
+                .isEqualTo("Desenvolvimento Frontend com Angular");
+    }
 }

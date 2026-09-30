@@ -82,7 +82,7 @@ public class GeminiService {
                         .connectTimeout(Duration.ofSeconds(10))
                         .build()
         );
-        requestFactory.setReadTimeout(Duration.ofSeconds(20));
+        requestFactory.setReadTimeout(Duration.ofSeconds(30));
 
         this.restClient = RestClient.builder()
                 .requestFactory(requestFactory)
@@ -179,29 +179,54 @@ public class GeminiService {
 
     private Map<String, Object> montarPayload(String base64Data, String mimeType) {
         String instrucaoSistema = """
-                Você é um especialista em análise e extração de dados de certificados acadêmicos, diplomas e certificados de cursos e capacitações.
-                Analise atentamente o documento fornecido (imagem ou PDF) e extraia com precisão:
-                - 'nome': Título exato do curso, formação, workshop ou certificação. NUNCA confunda o nome do curso com o nome do aluno ou dos instrutores!
-                - 'empresa': Nome da instituição de ensino, escola, universidade ou plataforma emissora (ex: Alura, Udemy, FIAP, USP, Coursera, Rocketseat, AWS, Google, DIO, Senac).
-                - 'dataConclusao': Data em que o curso foi concluído ou certificado emitido, estritamente no formato YYYY-MM-DD. Se apenas houver mês e ano, use o primeiro dia daquele mês.
-                - 'cargaHoraria': Quantidade total de horas do curso em número inteiro (ex: '40 horas' -> 40). Apenas o número.
-                - 'tags': Lista de 2 a 6 palavras-chave ou tecnologias principais identificadas no curso/ementa (ex: ['Java', 'Spring Boot', 'Backend']).
-                - 'descricao': Breve descrição dos tópicos e ementa abordados no curso que constem no certificado.
-                - 'linkValidacao': URL web de validação de autenticidade (ex: 'https://...', 'www...').
-                  * Extraia APENAS se houver uma URL ou link web explícito no certificado.
-                  * Se o certificado tiver apenas um código alfanumérico ou hash sem nenhuma URL ou site, retorne null.
+                Você é um especialista em análise e extração rigorosa de dados de certificados acadêmicos, diplomas e certificados de cursos e capacitações.
+                Sua prioridade máxima é a PRECISÃO e a EVITAÇÃO DE FALSOS POSITIVOS.
+
+                Analise atentamente o documento fornecido (imagem ou PDF) e siga estritamente estas regras de extração:
+
+                1. 'nome': TÍTULO EXATO DO CURSO OU CERTIFICAÇÃO
+                   - Extraia o nome específico do curso, capacitação, workshop, formação técnica ou certificação (ex: 'Java e Spring Boot', 'Desenvolvimento Web Fullstack', 'AWS Certified Solutions Architect').
+                   - NUNCA confunda o nome do curso com o NOME DO ALUNO (o nome do aluno geralmente está em maior destaque visual e precedido por termos como 'Certificamos que...', 'Conferido a...', 'Certifico que...', 'Outorgado a...', 'This is to certify that...').
+                   - NUNCA confunda o nome do curso com NOMES DE INSTRUTORES, PROFESSORES, COORDENADORES OU ASSINATURAS no rodapé ou corpo do documento.
+                   - NUNCA use títulos genéricos do documento como 'Certificado', 'Certificado de Conclusão', 'Diploma', 'Certificate of Completion' ou 'Certificado de Participação'.
+
+                2. 'empresa': INSTITUIÇÃO OU PLATAFORMA EMISSORA
+                   - Nome da escola, universidade, faculdade, plataforma de cursos ou entidade que emitiu o certificado (ex: 'Alura', 'Udemy', 'Coursera', 'FIAP', 'DIO', 'USP', 'Rocketseat', 'Google', 'AWS', 'Senac', 'Harvard').
+                   - Não confunda o nome do instrutor ou autor do curso com a instituição emissora.
+
+                3. 'dataConclusao': DATA DE CONCLUSÃO OU EMISSÃO
+                   - Data estritamente no formato YYYY-MM-DD.
+                   - Se houver data de início e término, utilize a data de término (conclusão).
+                   - Se constar apenas mês e ano (ex: 'Março de 2024'), utilize o primeiro dia: '2024-03-01'.
+                   - Não confunda com a data de nascimento do aluno ou data de fundação da instituição.
+
+                4. 'cargaHoraria': CARGA HORÁRIA TOTAL EM HORAS
+                   - Apenas número inteiro representando as horas totais (ex: '60 horas' -> 60, '120h' -> 120).
+                   - NUNCA confunda com o ano (ex: 2024), código de validação, porcentagem de presença ou número de aulas/módulos.
+                   - Se não houver carga horária explícita no certificado, retorne null.
+
+                5. 'tags': TECNOLOGIAS E TÓPICOS TÉCNICOS
+                   - De 2 a 6 palavras-chave focadas em tecnologias, linguagens de programação, ferramentas ou conceitos específicos abordados (ex: ['Java', 'Spring Boot', 'APIs REST']).
+                   - NUNCA inclua tags genéricas irrelevantes como 'Certificado', 'Curso', 'Aluno', 'Conclusão', 'Online', 'Participação'.
+
+                6. 'descricao': EMENTA OU SÍNTESE DO CURSO
+                   - Breve resumo dos tópicos, habilidades ou matérias descritas no certificado. Se não houver ementa explícita, forneça uma síntese concisa do objetivo do curso.
+
+                7. 'linkValidacao': URL DE VALIDAÇÃO
+                   - Extraia APENAS se houver uma URL web navegável explícita no certificado (ex: 'https://...', 'www...').
+                   - Se houver apenas um código alfanumérico ou hash de validação sem link web, retorne null.
                 """;
 
         Map<String, Object> schema = Map.of(
                 "type", "OBJECT",
                 "properties", Map.of(
-                        "nome", Map.of("type", "STRING", "description", "Título exato do curso ou certificação"),
-                        "empresa", Map.of("type", "STRING", "description", "Empresa ou instituição emissora"),
-                        "dataConclusao", Map.of("type", "STRING", "description", "Data no formato YYYY-MM-DD"),
-                        "cargaHoraria", Map.of("type", "INTEGER", "description", "Carga horária total em horas inteiras"),
-                        "tags", Map.of("type", "ARRAY", "items", Map.of("type", "STRING"), "description", "Tecnologias ou tópicos abordados"),
-                        "descricao", Map.of("type", "STRING", "description", "Descrição concisa dos tópicos ou ementa"),
-                        "linkValidacao", Map.of("type", "STRING", "description", "URL completa e navegável de verificação de autenticidade (ex: https://...)")
+                        "nome", Map.of("type", "STRING", "description", "Título exato do curso ou certificação. NUNCA use o nome do aluno, nem nomes de instrutores, nem termos genéricos como Certificado"),
+                        "empresa", Map.of("type", "STRING", "description", "Nome da instituição de ensino, universidade ou plataforma emissora"),
+                        "dataConclusao", Map.of("type", "STRING", "description", "Data de conclusão ou emissão no formato estrito YYYY-MM-DD"),
+                        "cargaHoraria", Map.of("type", "INTEGER", "description", "Carga horária total do curso em horas inteiras (apenas o número de horas). Retorne null se não houver"),
+                        "tags", Map.of("type", "ARRAY", "items", Map.of("type", "STRING"), "description", "2 a 6 tecnologias ou tópicos técnicos abordados. Evite termos genéricos"),
+                        "descricao", Map.of("type", "STRING", "description", "Breve descrição dos tópicos e ementa abordados"),
+                        "linkValidacao", Map.of("type", "STRING", "description", "URL completa e navegável de validação (ex: https://...). Retorne null se for apenas código ou hash")
                 )
         );
 
@@ -243,7 +268,7 @@ public class GeminiService {
             String conteudoJson = textNode.asText();
             JsonNode dados = objectMapper.readTree(conteudoJson);
 
-            String nome = extrairTexto(dados, "nome");
+            String nome = normalizarNomeCurso(extrairTexto(dados, "nome"));
             String empresa = extrairTexto(dados, "empresa");
             LocalDate dataConclusao = extrairData(dados, "dataConclusao");
             Integer cargaHoraria = extrairInteiro(dados, "cargaHoraria");
@@ -267,6 +292,40 @@ public class GeminiService {
             log.error("Erro ao converter JSON retornado pelo Gemini.", ex);
             return CertificadoExtracaoResponseDTO.vazio(fotoChave, fotoUrl);
         }
+    }
+
+    private static final Set<String> TITULOS_INVALIDOS = Set.of(
+            "certificado",
+            "certificado de conclusão",
+            "certificado de conclusao",
+            "certificado de participação",
+            "certificado de participacao",
+            "certificate",
+            "certificate of completion",
+            "certificate of attendance",
+            "diploma"
+    );
+
+    String normalizarNomeCurso(String nome) {
+        if (nome == null || nome.isBlank()) {
+            return null;
+        }
+        String limpo = nome.trim();
+        String lower = limpo.toLowerCase();
+
+        // Evita que títulos genéricos de documentos sejam salvos como nome do curso
+        if (TITULOS_INVALIDOS.contains(lower)) {
+            return null;
+        }
+
+        // Evita frases inteiras de certificado que contêm nome do aluno em vez do curso
+        if (lower.startsWith("certificamos que ") || lower.startsWith("certifico que ")
+                || lower.startsWith("conferido a ") || lower.startsWith("outorgado a ")
+                || lower.startsWith("this is to certify that ")) {
+            return null;
+        }
+
+        return limpo;
     }
 
     private String extrairTexto(JsonNode node, String campo) {
@@ -300,10 +359,21 @@ public class GeminiService {
         }
     }
 
+    private static final Set<String> TAGS_GENERICAS_IGNORAR = Set.of(
+            "certificado", "conclusao", "conclusão", "curso", "online", "aluno", "participacao", "participação"
+    );
+
     private List<String> extrairListaString(JsonNode node, String campo) {
         JsonNode arrayNode = node.get(campo);
         if (arrayNode != null && arrayNode.isArray()) {
-            return objectMapper.convertValue(arrayNode, objectMapper.getTypeFactory().constructCollectionType(List.class, String.class));
+            List<String> brutas = objectMapper.convertValue(
+                    arrayNode, objectMapper.getTypeFactory().constructCollectionType(List.class, String.class)
+            );
+            return brutas.stream()
+                    .filter(t -> t != null && !t.isBlank())
+                    .map(String::trim)
+                    .filter(t -> !TAGS_GENERICAS_IGNORAR.contains(t.toLowerCase()))
+                    .toList();
         }
         return List.of();
     }
