@@ -14,6 +14,7 @@ import br.com.certifiquese.dto.EsqueciSenhaRequestDTO;
 import br.com.certifiquese.dto.RedefinirSenhaRequestDTO;
 import br.com.certifiquese.dto.RecuperacaoSenhaResponseDTO;
 import br.com.certifiquese.exception.RecuperacaoSenhaInvalidaException;
+import br.com.certifiquese.exception.RecursoNaoEncontradoException;
 import br.com.certifiquese.model.RecuperacaoSenhaEntity;
 import br.com.certifiquese.model.UsuarioEntity;
 import br.com.certifiquese.repository.RecuperacaoSenhaRepository;
@@ -54,8 +55,10 @@ public class RecuperacaoSenhaService {
 
     @Transactional
     public RecuperacaoSenhaResponseDTO solicitarRecuperacaoSenha(EsqueciSenhaRequestDTO dto) {
-        usuarioRepository.findByEmail(dto.email()).ifPresent(this::gerarEEnviarTokenRecuperacao);
-        return new RecuperacaoSenhaResponseDTO(MENSAGEM_GERAR);
+        UsuarioEntity usuario = usuarioRepository.findByEmail(dto.email())
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Este e-mail não está cadastrado em nosso sistema."));
+        gerarEEnviarTokenRecuperacao(usuario);
+        return new RecuperacaoSenhaResponseDTO("E-mail de recuperação enviado com sucesso! Verifique sua caixa de entrada.");
     }
 
     @Transactional

@@ -77,7 +77,7 @@ class RecuperacaoSenhaServiceTest {
 
         RecuperacaoSenhaResponseDTO resposta = service.solicitarRecuperacaoSenha(new EsqueciSenhaRequestDTO("alice@exemplo.com"));
 
-        assertThat(resposta.mensagem()).isEqualTo("Se o e-mail estiver cadastrado, você receberá as instruções para redefinir a senha.");
+        assertThat(resposta.mensagem()).isEqualTo("E-mail de recuperação enviado com sucesso! Verifique sua caixa de entrada.");
         assertThat(emailsEnviados).hasSize(1);
 
         String tokenRaw = extrairTokenDaMensagem(emailsEnviados.get(0).corpo());
@@ -91,10 +91,11 @@ class RecuperacaoSenhaServiceTest {
     }
 
     @Test
-    void deveRetornarMensagemGenericaQuandoEmailNaoExistir() {
-        RecuperacaoSenhaResponseDTO resposta = service.solicitarRecuperacaoSenha(new EsqueciSenhaRequestDTO("inexistente@exemplo.com"));
+    void deveLancarExcecaoQuandoEmailNaoExistir() {
+        assertThatThrownBy(() -> service.solicitarRecuperacaoSenha(new EsqueciSenhaRequestDTO("inexistente@exemplo.com")))
+                .isInstanceOf(br.com.certifiquese.exception.RecursoNaoEncontradoException.class)
+                .hasMessage("Este e-mail não está cadastrado em nosso sistema.");
 
-        assertThat(resposta.mensagem()).isEqualTo("Se o e-mail estiver cadastrado, você receberá as instruções para redefinir a senha.");
         assertThat(emailsEnviados).isEmpty();
         assertThat(tokensPorId).isEmpty();
     }
