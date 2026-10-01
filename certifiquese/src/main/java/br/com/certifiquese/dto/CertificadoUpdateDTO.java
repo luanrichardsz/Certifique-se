@@ -6,6 +6,7 @@ import java.util.List;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
@@ -22,6 +23,7 @@ public record CertificadoUpdateDTO(
         String empresa,
 
         @NotNull(message = "A data de conclusão é obrigatória")
+        @PastOrPresent(message = "A data de conclusão não pode ultrapassar a data atual")
         LocalDate dataConclusao,
 
         @NotEmpty(message = "Informe pelo menos uma tag")
