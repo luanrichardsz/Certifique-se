@@ -197,6 +197,7 @@ public class GeminiService {
                    - Se houver data de início e término, utilize a data de término (conclusão).
                    - Se constar apenas mês e ano (ex: 'Março de 2024'), utilize o primeiro dia: '2024-03-01'.
                    - Não confunda com a data de nascimento do aluno ou data de fundação da instituição.
+                   - O ano deve ser realista (entre 1960 e a data atual). NUNCA invente ou use anos absurdos. Se for anterior a 1960 ou futura, retorne null.
 
                 4. 'cargaHoraria': CARGA HORÁRIA TOTAL EM HORAS
                    - Apenas número inteiro representando as horas totais (ex: '60 horas' -> 60, '120h' -> 120).
@@ -220,7 +221,7 @@ public class GeminiService {
                 "properties", Map.of(
                         "nome", Map.of("type", "STRING", "description", "Título exato do curso ou certificação. NUNCA use o nome do aluno, nem nomes de instrutores, nem termos genéricos como Certificado"),
                         "empresa", Map.of("type", "STRING", "description", "Nome da instituição de ensino, universidade ou plataforma emissora"),
-                        "dataConclusao", Map.of("type", "STRING", "description", "Data de conclusão ou emissão no formato estrito YYYY-MM-DD"),
+                        "dataConclusao", Map.of("type", "STRING", "description", "Data de conclusão ou emissão no formato estrito YYYY-MM-DD (ano entre 1960 e hoje). Retorne null se for anterior a 1960, futura ou ilegível"),
                         "cargaHoraria", Map.of("type", "INTEGER", "description", "Carga horária total do curso em horas inteiras (apenas o número de horas). Retorne null se não houver"),
                         "tags", Map.of("type", "ARRAY", "items", Map.of("type", "STRING"), "description", "2 a 6 tecnologias ou tópicos técnicos abordados. Evite termos genéricos"),
                         "descricao", Map.of("type", "STRING", "description", "Breve descrição dos tópicos e ementa abordados"),
@@ -358,13 +359,25 @@ public class GeminiService {
         return null;
     }
 
+    LocalDate normalizarDataConclusao(LocalDate data) {
+        if (data == null) {
+            return null;
+        }
+        if (data.getYear() < 1960 || data.isAfter(LocalDate.now())) {
+            log.warn("Data de conclusão extraída fora do limite aceitável (1960 até hoje): '{}'", data);
+            return null;
+        }
+        return data;
+    }
+
     private LocalDate extrairData(JsonNode node, String campo) {
         String dataStr = extrairTexto(node, campo);
         if (dataStr == null) {
             return null;
         }
         try {
-            return LocalDate.parse(dataStr);
+            LocalDate data = LocalDate.parse(dataStr);
+            return normalizarDataConclusao(data);
         } catch (DateTimeParseException ex) {
             log.debug("Data em formato inesperado retornada pela IA: '{}'", dataStr);
             return null;

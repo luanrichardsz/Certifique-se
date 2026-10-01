@@ -2,6 +2,8 @@ package br.com.certifiquese.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.LocalDate;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
@@ -98,5 +100,25 @@ class GeminiServiceTest {
                 .isEqualTo("AWS Certified Solutions Architect");
         assertThat(service.normalizarNomeCurso("Desenvolvimento Frontend com Angular"))
                 .isEqualTo("Desenvolvimento Frontend com Angular");
+    }
+
+    @Test
+    @DisplayName("Deve descartar datas de conclusão anteriores a 1960 ou no futuro")
+    void deveNormalizarESanitizarDataConclusao() {
+        GeminiService service = new GeminiService("chave-fake", "gemini-3.8-flash");
+
+        // Casos que devem ser descartados (retornar null)
+        assertThat(service.normalizarDataConclusao(null)).isNull();
+        assertThat(service.normalizarDataConclusao(LocalDate.of(303, 3, 3))).isNull();
+        assertThat(service.normalizarDataConclusao(LocalDate.of(1959, 12, 31))).isNull();
+        assertThat(service.normalizarDataConclusao(LocalDate.now().plusDays(1))).isNull();
+
+        // Casos válidos
+        assertThat(service.normalizarDataConclusao(LocalDate.of(1960, 1, 1)))
+                .isEqualTo(LocalDate.of(1960, 1, 1));
+        assertThat(service.normalizarDataConclusao(LocalDate.of(2024, 6, 15)))
+                .isEqualTo(LocalDate.of(2024, 6, 15));
+        assertThat(service.normalizarDataConclusao(LocalDate.now()))
+                .isEqualTo(LocalDate.now());
     }
 }
