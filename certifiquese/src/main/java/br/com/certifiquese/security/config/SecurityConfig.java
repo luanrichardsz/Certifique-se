@@ -24,9 +24,12 @@ import jakarta.servlet.DispatcherType;
 import br.com.certifiquese.model.UsuarioEntity;
 import br.com.certifiquese.repository.UsuarioRepository;
 import br.com.certifiquese.security.authentication.UsuarioDetailsService;
+import br.com.certifiquese.security.ratelimit.RateLimitFilter;
 
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtException;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import org.springframework.beans.factory.annotation.Value;
 import java.util.ArrayList;
@@ -39,12 +42,21 @@ public class SecurityConfig {
 	private String frontendUrl;
 
 	@Bean
-	public SecurityFilterChain securityFilterChain(HttpSecurity http, DaoAuthenticationProvider authenticationProvider, UsuarioRepository usuarioRepository) throws Exception {
+	public SecurityFilterChain securityFilterChain(
+			HttpSecurity http,
+			DaoAuthenticationProvider authenticationProvider,
+			UsuarioRepository usuarioRepository,
+			RateLimitFilter rateLimitFilter) throws Exception {
 		return http
 				.cors(cors -> cors.configurationSource(corsConfigurationSource()))
 				.csrf(csrf -> csrf.disable())
-				.headers(headers -> headers.frameOptions(frame -> frame.disable()))
+				.headers(headers -> headers
+						.frameOptions(frame -> frame.sameOrigin())
+						.contentTypeOptions(contentType -> {})
+						.httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000))
+				)
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+				.addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
 				.authorizeHttpRequests(auth -> auth
 						.dispatcherTypeMatchers(DispatcherType.ERROR)
 						.permitAll()
@@ -149,5 +161,12 @@ public class SecurityConfig {
 		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 		source.registerCorsConfiguration("/**", configuration);
 		return source;
+	}
+
+	@Bean
+	public FilterRegistrationBean<RateLimitFilter> rateLimitFilterRegistration(RateLimitFilter filter) {
+		FilterRegistrationBean<RateLimitFilter> registration = new FilterRegistrationBean<>(filter);
+		registration.setEnabled(false);
+		return registration;
 	}
 }

@@ -29,6 +29,13 @@ public class ApiExceptionHandler {
         return problemDetail;
     }
 
+    @ExceptionHandler(MuitasRequisicoesException.class)
+    public ProblemDetail tratarMuitasRequisicoes(MuitasRequisicoesException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());
+        problemDetail.setProperty("mensagem", ex.getMessage());
+        return problemDetail;
+    }
+
     @ExceptionHandler({SenhaIncorretaException.class, OperacaoNaoPermitidaException.class})
     public ProblemDetail tratarAcessoNegado(RuntimeException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
