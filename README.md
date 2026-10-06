@@ -1,44 +1,53 @@
-# 🎓 Certifique-se — API Backend (Spring Boot & Cloud)
+# 🎓 Certifique-se — API Backend
 
-> Plataforma para centralização, gestão e disponibilização de portfólio público de certificados acadêmicos e profissionais.
+> API REST responsável pela gestão, armazenamento e disponibilização de certificados acadêmicos e profissionais.
 
-![Java](https://img.shields.io/badge/Java-21-orange?style=for-the-badge&logo=openjdk)
-![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.x-brightgreen?style=for-the-badge&logo=springboot)
-![Spring Security](https://img.shields.io/badge/Spring_Security-JWT-green?style=for-the-badge&logo=springsecurity)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue?style=for-the-badge&logo=postgresql)
-![Docker](https://img.shields.io/badge/Docker-Containers-blue?style=for-the-badge&logo=docker)
+![Java](https://img.shields.io/badge/Java-21-orange?style=for-the-badge\&logo=openjdk)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.x-brightgreen?style=for-the-badge\&logo=springboot)
+![Spring Security](https://img.shields.io/badge/Spring_Security-JWT-green?style=for-the-badge\&logo=springsecurity)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue?style=for-the-badge\&logo=postgresql)
+![Docker](https://img.shields.io/badge/Docker-Containers-blue?style=for-the-badge\&logo=docker)
 
 ---
 
-## 📌 Sobre o Projeto
-Muitos estudantes e profissionais perdem comprovantes de cursos em pastas do computador, e-mails antigos ou drives em nuvem sem organização. O **Certifique-se** resolve essa dor ao oferecer um painel centralizado para envio, categorização por tags, busca por emissor e geração de links de verificação.
+## 📌 Sobre
 
-## 🛠️ Arquitetura & Tecnologias
-- **Linguagem & Framework:** Java 17 + Spring Boot
-- **Segurança:** Spring Security com autenticação Stateless via Tokens JWT
-- **Banco de Dados:** PostgreSQL (modelagem relacional com migrations e queries otimizadas)
-- **Armazenamento de Arquivos:** Integração com Storage Cloud para upload e gestão dos certificados (PDF/JPG/PNG)
-- **Containerização:** Docker e Docker Compose para padronização de ambiente
-- **Frontend Consumidor:** Angular CLI ([Acesse o repositório Web](https://github.com/luanrichardsz/certifique-se-web))
+O **Certifique-se** centraliza certificados acadêmicos e profissionais em um único ambiente, permitindo seu armazenamento, organização, consulta e compartilhamento através de um portfólio público.
 
-## 🚀 Endpoints Principais (API REST)
+## 🛠️ Tecnologias
 
-| Verbo | Endpoint | Descrição | Protegido |
-| :--- | :--- | :--- | :---: |
-| `POST` | `/api/auth/login` | Autenticação de usuário e retorno de JWT | ❌ |
-| `POST` | `/api/usuarios` | Cadastro de novo usuário | ❌ |
-| `GET` | `/api/certificados` | Listagem paginada de certificados com filtros (nome, tag, emissor) | 🔐 |
-| `POST` | `/api/certificados` | Upload e cadastro de novo certificado | 🔐 |
-| `DELETE` | `/api/certificados/{id}` | Remoção segura de certificado do usuário | 🔐 |
+* **Backend:** Java 21 + Spring Boot
+* **Segurança:** Spring Security + JWT
+* **Banco de Dados:** PostgreSQL
+* **Armazenamento:** Cloud Storage para certificados PDF/JPG/PNG
+* **Containerização:** Docker + Docker Compose
+* **Frontend:** Angular — [Repositório Web](https://github.com/luanrichardsz/certifique-se-web)
 
-## 💻 Como Rodar a Aplicação Localmente
+## 🔐 API REST
+
+A API utiliza autenticação **JWT stateless**, garantindo que operações relacionadas aos dados do usuário sejam realizadas mediante autenticação e autorização.
+
+Principais recursos:
+
+| Método   | Endpoint                 | Função                               |
+| :------- | :----------------------- | :----------------------------------- |
+| `POST`   | `/api/auth/login`        | Autenticação e emissão do token JWT  |
+| `POST`   | `/api/usuarios`          | Cadastro de usuário                  |
+| `GET`    | `/api/certificados`      | Consulta e filtragem de certificados |
+| `POST`   | `/api/certificados`      | Cadastro e upload de certificado     |
+| `DELETE` | `/api/certificados/{id}` | Exclusão de certificado              |
+
+> **Autenticação e autorização são aplicadas aos recursos privados da aplicação, garantindo que cada usuário tenha acesso apenas aos seus próprios dados.**
+
+## 💻 Executando localmente
 
 ```bash
-# 1. Clone o repositório
-git clone [https://github.com/luanrichardsz/Certifique-se.git](https://github.com/luanrichardsz/Certifique-se.git)
+# Clone o repositório
+git clone https://github.com/luanrichardsz/Certifique-se.git
 
-# 2. Acesse a pasta
+# Acesse o projeto
 cd Certifique-se
 
-# 3. Suba o ambiente via Docker Compose (PostgreSQL + App)
+# Suba o ambiente
 docker-compose up -d
+```
