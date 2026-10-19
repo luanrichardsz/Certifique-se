@@ -1,5 +1,5 @@
 ALTER TABLE tb_usuario
-ADD COLUMN role VARCHAR(50);
+ADD COLUMN IF NOT EXISTS role VARCHAR(50);
 
 UPDATE tb_usuario
 SET role = 'USER'

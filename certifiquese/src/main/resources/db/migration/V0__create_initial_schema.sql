@@ -1,4 +1,4 @@
-CREATE TABLE tb_usuario (
+CREATE TABLE IF NOT EXISTS tb_usuario (
     id_usuario BIGSERIAL PRIMARY KEY,
     nome_usuario VARCHAR(255) NOT NULL,
     biografia VARCHAR(255),
@@ -7,7 +7,7 @@ CREATE TABLE tb_usuario (
     CONSTRAINT uk_usuario_email UNIQUE (email)
 );
 
-CREATE TABLE tb_certificado (
+CREATE TABLE IF NOT EXISTS tb_certificado (
     id_certificado BIGSERIAL PRIMARY KEY,
     hash_certificado VARCHAR(255) NOT NULL,
     foto VARCHAR(255) NOT NULL,
@@ -20,7 +20,7 @@ CREATE TABLE tb_certificado (
         FOREIGN KEY (id_usuario) REFERENCES tb_usuario (id_usuario)
 );
 
-CREATE TABLE tb_certificado_tag (
+CREATE TABLE IF NOT EXISTS tb_certificado_tag (
     id_certificado BIGINT NOT NULL,
     tag VARCHAR(255) NOT NULL,
     CONSTRAINT fk_certificado_tag_certificado
