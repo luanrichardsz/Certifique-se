@@ -1,6 +1,6 @@
-# 🎖️ Certifique-se
+# 🎖️ Certifique-se — Backend API
 
-> Plataforma robusta e inteligente para gerenciamento, validação e exibição pública de certificados e conquistas profissionais, com extração automatizada via Inteligência Artificial (Google Gemini) e armazenamento de alta performance na nuvem com Cloudflare R2.
+> **API RESTful corporativa para gerenciamento, validação e exibição pública de certificações profissionais, equipada com extração multimodal via Inteligência Artificial (Google Gemini) e armazenamento em nuvem de alta performance (Cloudflare R2).**
 
 <p align="center">
   <img src="https://img.shields.io/badge/Java-21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white" alt="Java 21" />
@@ -8,9 +8,8 @@
   <img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
   <img src="https://img.shields.io/badge/Cloudflare_R2-F38020?style=for-the-badge&logo=cloudflare&logoColor=white" alt="Cloudflare R2" />
   <img src="https://img.shields.io/badge/Google_Gemini-4285F4?style=for-the-badge&logo=google&logoColor=white" alt="Google Gemini" />
-  <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
   <img src="https://img.shields.io/badge/Flyway-CC0202?style=for-the-badge&logo=flyway&logoColor=white" alt="Flyway" />
-  <img src="https://img.shields.io/badge/Swagger-OpenAPI_3-85EA2D?style=for-the-badge&logo=swagger&logoColor=black" alt="Swagger" />
+  <img src="https://img.shields.io/badge/Status-Proprietário-111827?style=for-the-badge" alt="Proprietário" />
 </p>
 
 ---
@@ -18,66 +17,52 @@
 ## 📌 Sumário
 
 - [Visão Geral](#-visão-geral)
-- [Funcionalidades Principais](#-funcionalidades-principais)
+- [Principais Funcionalidades](#-principais-funcionalidades)
 - [Arquitetura do Sistema](#-arquitetura-do-sistema)
 - [Stack Tecnológica](#-stack-tecnológica)
 - [Mapeamento da Estrutura do Projeto](#-mapeamento-da-estrutura-do-projeto)
-- [Mapeamento Completo de Endpoints (API REST)](#-mapeamento-completo-de-endpoints-api-rest)
-- [Segurança & Proteção](#-segurança--proteção)
+- [Especificação de Endpoints (API REST)](#-especificação-de-endpoints-api-rest)
+- [Segurança, Resiliência e Governança](#-segurança-resiliência-e-governança)
 - [Integrações Externas](#-integrações-externas)
-  - [Google Gemini API (Extração com IA)](#1-google-gemini-api-extração-inteligente)
-  - [Cloudflare R2 Storage (S3-compatible)](#2-cloudflare-r2-armazenamento-de-arquivos)
-  - [Serviço de E-mail (SMTP Resend)](#3-serviço-de-e-mail-smtp--resend)
-- [Variáveis de Ambiente](#-variáveis-de-ambiente)
-- [Como Executar o Projeto](#-como-executar-o-projeto)
-  - [Pré-requisitos](#pré-requisitos)
-  - [Opção 1: Via Docker Compose (Recomendado)](#opção-1-via-docker-compose-recomendado)
-  - [Opção 2: Execução Local (Híbrida)](#opção-2-execução-local-híbrida)
-- [Testes Automatizados](#-testes-automatizados)
-- [Regras de Negócio e Limites](#-regras-de-negócio-e-limites)
-- [Licença e Autoria](#-licença-e-autoria)
+- [Regras de Negócio e Limites Operacionais](#-regras-de-negócio-e-limites-operacionais)
+- [Qualidade e Testes Automatizados](#-qualidade-e-testes-automatizados)
+- [Propriedade e Direitos](#-propriedade-e-direitos)
 
 ---
 
 ## 🎯 Visão Geral
 
-O **Certifique-se** foi desenvolvido para resolver o problema clássico da dispersão de certificados e títulos acadêmicos/profissionais (geralmente espalhados em PDFs em pastas locais ou no histórico de e-mails).
+O **Certifique-se Backend** é o núcleo transacional e de inteligência da plataforma **Certifique-se** ([certifique-se.app](https://certifique-se.app)), projetado para solucionar a dispersão de certificados, diplomas e comprovantes de qualificação profissional.
 
-A plataforma permite:
-1. **Centralizar e catalogar** todas as certificações em um único lugar seguro.
-2. **Eliminar o preenchimento manual**: através do envio de fotos (JPEG, PNG, WebP) ou PDFs, a IA analisa o documento e preenche instantaneamente título, instituição, carga horária, data de conclusão, tags e links de validação.
-3. **Publicar um Portfólio Pessoal**: cada usuário dispõe de uma URL pública (`/public/usuarios/{username}`) que exibe suas conquistas, somatório de horas de estudo e habilidades comprovadas.
+A arquitetura do serviço sustenta três pilares principais:
+1. **Centralização e Integridade**: Catalogação estruturada de certificações com geração de assinatura única (`SHA-256`) por documento para prevenção de duplicidades e garantia de autenticidade.
+2. **Automação Cognitiva (Zero-Data-Entry)**: Processamento multimodal de imagens (`JPEG`, `PNG`, `WebP`) e documentos (`PDF`) via Google Gemini para extração instantânea e estruturada de título do curso, instituição emissora, carga horária, data de conclusão, competências e link oficial de validação.
+3. **Portfólio Público de Alta Disponibilidade**: Exposição controlada de perfis profissionais (`/public/usuarios/{username}`), consolidando métricas de horas complementares, habilidades e comprovantes verificáveis.
 
 ---
 
-## ✨ Funcionalidades Principais
+## ✨ Principais Funcionalidades
 
-- 🤖 **Extração Inteligente por Visão Computacional / OCR com IA**:
-  - Processamento multimodal via Google Gemini (`gemini-3.8-flash` com fallback automático para `gemini-3.5-flash` e `gemini-3.5-flash-lite`).
-  - Extração estrita via JSON Schema com filtros anti-alucinação (ignora nomes de alunos como títulos de cursos, valida datas entre 1960 e hoje, padroniza URLs de validação).
-- 🖼️ **Armazenamento de Mídia em Nuvem (Cloudflare R2)**:
-  - Upload direto e seguro de certificados e avatares de perfil com geração de chaves únicas por UUID.
-  - Proxy seguro de entrega de imagens (`/certificados/imagens/{chave}`) com headers de cache público e imutável por 1 ano.
-  - Limpeza automática de arquivos obsoletos ou deletados executada apenas após confirmação transacional do banco (`TransactionSynchronizationManager`).
-- 🌐 **Portfólio Público Compartilhável**:
-  - Exibição de perfil com foto, bio, headline, contagem de certificados e total de horas computadas.
-  - Controle de visibilidade granular (o usuário decide quais certificados serão públicos e pode desativar seu perfil a qualquer momento).
-- 🔐 **Autenticação & Sessões Seguras**:
-  - Arquitetura stateless via JWT com Spring Security OAuth2 Resource Server.
-  - Controle de revogação de tokens em tempo real via claim `tokenVersion`: invalidando sessões antigas imediatamente após troca ou recuperação de senha.
-- ⏱️ **Rate Limiting em Memória (Sliding Window)**:
-  - Proteção ativa contra ataques de força bruta no Login (10 req/min).
-  - Proteção contra spam de e-mails em Recuperação de Senha (5 req/2min).
-  - Proteção contra exaustão de cota de IA (15 req/min).
-  - Suporte a cabeçalhos de proxy reverso (`CF-Connecting-IP` e `X-Forwarded-For`).
-- 📧 **Recuperação de Senha Segura via E-mail**:
-  - Envio de token criptograficamente seguro via `SecureRandom` com validade de 30 minutos.
-  - Armazenamento em hash SHA-256 no banco (o token original trafega apenas no link do usuário).
-  - Template de e-mail em HTML responsivo e elegante.
-- 🔍 **Busca & Filtros Dinâmicos**:
-  - Filtros flexíveis por nome do curso, instituição, data de conclusão e tags utilizando JPA Specifications.
-- 🛡️ **Prevenção de Duplicidades**:
-  - Algoritmo de hash SHA-256 exclusivo gerado a partir do conteúdo do certificado, impedindo cadastros duplicados.
+- 🤖 **Extração Multimodal via Inteligência Artificial (OCR Cognitivo)**:
+  - Integração direta com a família de modelos **Google Gemini** (`gemini-3.8-flash` com cadeia de fallback resiliente para `gemini-3.5-flash` e `gemini-3.5-flash-lite`).
+  - Extração guiada por **JSON Schema estrito** e instruções de sistema anti-alucinação (descarta nomes de alunos como títulos de cursos, higieniza termos genéricos, valida intervalos temporais entre 1960 e a data atual e padroniza URLs de verificação).
+- ☁️ **Armazenamento Distribuído em Nuvem (Cloudflare R2)**:
+  - Persistência de certificados e avatares compatível com a API AWS S3 v2 e chaves únicas baseadas em UUID.
+  - Entrega otimizada de mídia (`/certificados/imagens/{chave}`) com políticas de cache público imutável (`max-age=31536000, immutable`).
+  - Consistência transacional entre banco e storage: exclusões de objetos no R2 são executadas exclusivamente após a confirmação do commit no PostgreSQL (`TransactionSynchronizationManager`).
+- 🌐 **Vitrine e Portfólio Público**:
+  - Endpoints públicos otimizados para leitura de perfil, biografia, headline, totalizador de horas e certificados autorizados pelo titular.
+  - Controle de privacidade em nível de conta e por certificado individual.
+- 🔐 **Autenticação Stateless & Revogação Instantânea**:
+  - Autenticação baseada em **OAuth2 Resource Server (JWT)** assinados com HMAC-SHA256.
+  - Mecanismo de invalidação imediata de sessões via claim `tokenVersion`, revogando tokens emitidos anteriormente assim que ocorre uma alteração ou redefinição de senha.
+- ⏱️ **Rate Limiting por Janela Deslizante (Sliding Window)**:
+  - Proteção nativa em memória contra ataques de força bruta, abuso de envio de e-mails e exaustão de cota de IA, com reconhecimento de cabeçalhos de proxy reverso (`CF-Connecting-IP` e `X-Forwarded-For`).
+- 📧 **Fluxo Criptográfico de Recuperação de Senha**:
+  - Geração de tokens de alta entropia via `SecureRandom` com expiração estrita de 30 minutos.
+  - Persistência exclusiva do hash `SHA-256` do token no banco de dados e disparo transacional via SMTP (Resend) com template HTML responsivo.
+- 🔍 **Consultas Dinâmicas**:
+  - Filtragem avançada e combinada por título, instituição, data de conclusão e tags utilizando **JPA Specifications**.
 
 ---
 
@@ -85,31 +70,33 @@ A plataforma permite:
 
 ```mermaid
 graph TD
-    Client[Cliente / Frontend Web] -->|HTTP / JSON / Multipart| Gateway[Spring Boot API :8080]
+    Client[Certifique-se Web / SPA] -->|HTTPS / JSON / Multipart| Gateway[Spring Boot API]
 
-    subgraph "Camada de Segurança & Filtros"
-        Gateway --> RateLimit[RateLimitFilter / RateLimiterService]
-        RateLimit --> Security[SecurityConfig / OAuth2 JWT Converter]
+    subgraph "Camada de Segurança & Controle de Tráfego"
+        Gateway --> RateLimit[RateLimitFilter / Sliding Window]
+        RateLimit --> Security[Spring Security / OAuth2 JWT Validator]
     end
 
-    subgraph "Controladores & Regras de Negócio"
+    subgraph "Camada de Apresentação (REST Controllers)"
         Security --> AuthCtrl[AuthController]
         Security --> UserCtrl[UsuarioController]
         Security --> CertCtrl[CertificadoController]
         Security --> PubCtrl[PublicoController]
-        
+    end
+
+    subgraph "Camada de Domínio & Serviços"
         AuthCtrl --> AuthService[AuthService & RecuperacaoSenhaService]
         UserCtrl --> UserService[UsuarioService]
         CertCtrl --> CertService[CertificadoService]
-        CertCtrl --> GeminiService[GeminiService]
-        UserCtrl & CertCtrl --> R2Storage[R2StorageService]
+        CertCtrl --> GeminiService[GeminiService - Cadeia de Fallback IA]
+        UserCtrl & CertCtrl --> R2Storage[R2StorageService - Sync Pós-Commit]
     end
 
-    subgraph "Serviços e Infraestrutura Externa"
-        AuthService -->|SMTP 587| Resend[Resend Email Provider]
-        R2Storage -->|AWS S3 SDK v2| CloudflareR2[Cloudflare R2 Bucket]
-        GeminiService -->|REST Client| GeminiAPI[Google Gemini API]
-        CertService & UserService & AuthService -->|Spring Data JPA & Flyway| Postgres[(PostgreSQL 16)]
+    subgraph "Infraestrutura & Provedores Externos"
+        AuthService -->|SMTP TLS| Resend[Resend Transactional Email]
+        R2Storage -->|AWS S3 SDK v2| CloudflareR2[Cloudflare R2 Object Storage]
+        GeminiService -->|HTTPS REST| GeminiAPI[Google Gemini API]
+        CertService & UserService & AuthService -->|Spring Data JPA / Flyway| Postgres[(PostgreSQL 16)]
     end
 ```
 
@@ -117,359 +104,169 @@ graph TD
 
 ## 💻 Stack Tecnológica
 
-| Componente | Tecnologia / Biblioteca | Versão | Função |
+| Camada | Tecnologia / Biblioteca | Versão | Papel na Arquitetura |
 | :--- | :--- | :--- | :--- |
-| **Linguagem** | Java (Eclipse Temurin) | `21 (LTS)` | Ambiente de execução |
-| **Framework Base** | Spring Boot | `4.0.5` | Ecossistema da aplicação |
-| **Persistência** | Spring Data JPA / Hibernate | `7.2.x` | Mapeamento objeto-relacional |
-| **Banco de Dados** | PostgreSQL | `16-alpine` | Banco de dados relacional principal |
-| **Banco de Testes** | H2 Database | `2.4.x` | Banco de dados em memória para testes |
-| **Migrações de Banco**| Flyway Database PostgreSQL | `11.14.x` | Versionamento evolutivo do esquema SQL |
-| **Segurança** | Spring Security & OAuth2 JWT | Nativo | Autenticação stateless e autorização |
-| **Armazenamento** | AWS SDK for Java v2 (S3) | `2.54.19` | Cliente S3 integrado ao Cloudflare R2 |
-| **Inteligência Artificial**| Google Gemini API | `v1beta` | Extração de dados estruturados via Visão/OCR |
-| **E-mails** | Spring Boot Starter Mail | Nativo | Envio de e-mails transacionais (Resend) |
-| **Documentação** | SpringDoc OpenAPI (Swagger UI) | `2.8.9` | Especificação e interface interativa da API |
-| **Utilitários** | Project Lombok | Nativo | Redução de código boilerplate |
-| **Containerização**| Docker & Docker Compose | Multi-stage | Build e orquestração dos containers |
+| **Linguagem** | Java (Eclipse Temurin) | `21 (LTS)` | Runtime principal e recursos modernos da linguagem |
+| **Framework Core** | Spring Boot | `4.0.5` | Injeção de dependência, web server e ecossistema corporativo |
+| **Persistência** | Spring Data JPA / Hibernate | `7.2.x` | Mapeamento objeto-relacional e Specifications dinâmicas |
+| **Banco de Dados** | PostgreSQL | `16` | Persistência relacional transacional |
+| **Versionamento SQL** | Flyway | `11.14.x` | Governança e evolução automatizada de schema (`V0` a `V5`) |
+| **Segurança** | Spring Security & OAuth2 JWT | Nativo | Autenticação stateless, RBAC e validação criptográfica de tokens |
+| **Object Storage** | AWS SDK for Java v2 (S3) | `2.54.19` | Comunicação S3-compatible com o Cloudflare R2 |
+| **Inteligência Artificial** | Google Gemini API | `v1beta` | Visão computacional, OCR e extração estruturada de metadados |
+| **Mensageria de E-mail** | Spring Boot Starter Mail | Nativo | Disparo de e-mails transacionais via Resend SMTP |
+| **Especificação de API** | SpringDoc OpenAPI (Swagger) | `2.8.9` | Documentação técnica automatizada sob o padrão OpenAPI 3.0 |
 
 ---
 
 ## 📂 Mapeamento da Estrutura do Projeto
 
-Abaixo encontra-se o mapeamento detalhado da arquitetura de pacotes do projeto:
-
 ```text
 Certifique-se/
-├── .github/                            # Configurações de automação e workflows GitHub
-├── README.md                           # Documentação central do ecossistema
-└── certifiquese/                       # Raiz do projeto Spring Boot
-    ├── .dockerignore                   # Arquivos ignorados no build Docker
-    ├── .env.example                    # Modelo das variáveis de ambiente necessárias
-    ├── CLOUDFLARE_R2.md                # Documentação técnica específica da integração R2
-    ├── Dockerfile                      # Build multi-stage (JDK 21 compile -> JRE 21 runtime)
-    ├── docker-compose.yml              # Orquestração do PostgreSQL 16 e aplicação
-    ├── mvnw / mvnw.cmd                 # Maven Wrapper oficial
-    ├── pom.xml                         # Dependências e plugins de build do Maven
+├── README.md                                       # Documentação arquitetural do Backend
+└── certifiquese/                                   # Módulo principal Spring Boot
+    ├── Dockerfile                                  # Definição de imagem multi-stage (JDK 21 -> JRE 21)
+    ├── pom.xml                                     # Manifesto de dependências e build Maven
     └── src/
         ├── main/
         │   ├── java/br/com/certifiquese/
-        │   │   ├── CertifiqueseApplication.java  # Classe inicializadora da aplicação
-        │   │   ├── config/                       # Configurações de beans (ex: R2Config com S3Client)
-        │   │   ├── controller/                   # Camada de entrada REST (Controllers)
-        │   │   │   ├── AuthController.java       # Login e fluxos de recuperação de senha
-        │   │   │   ├── UsuarioController.java    # Gestão de perfil, avatar, senha e exclusão
-        │   │   │   ├── CertificadoController.java# Upload, OCR via IA, CRUD e buscas
-        │   │   │   └── PublicoController.java    # Endpoints públicos de portfólio e healthcheck
-        │   │   ├── dto/                          # Records imutáveis de entrada/saída (DTOs)
-        │   │   ├── exception/                    # Tratamento global de erros (RFC 7807 ProblemDetail)
-        │   │   ├── model/                        # Entidades JPA (UsuarioEntity, CertificadoEntity, etc)
-        │   │   ├── repository/                   # Interfaces Spring Data JPA
-        │   │   ├── security/                     # Camada de segurança
-        │   │   │   ├── authentication/           # UserDetailsService e UserDetails customizados
-        │   │   │   ├── config/                   # SecurityConfig, PasswordConfig, JwtConfig
-        │   │   │   ├── ratelimit/                # RateLimitFilter e RateLimiterService em memória
-        │   │   │   └── token/                    # TokenService (geração e assinatura de JWTs)
-        │   │   ├── service/                      # Regras de negócio da aplicação
-        │   │   │   ├── email/                    # Contrato EmailSender e implementação SpringEmailSender
-        │   │   │   ├── storage/                  # CertificadoStorage e R2StorageService
-        │   │   │   ├── AuthService.java          # Autenticação e emissão de tokens
-        │   │   │   ├── CertificadoService.java   # Gerenciamento de certificados e limites de planos
-        │   │   │   ├── GeminiService.java        # OCR, extração multimodal e cadeia de fallback
-        │   │   │   ├── RecuperacaoSenhaService.java # Lógica de tokens e disparo de redefinição
-        │   │   │   └── UsuarioService.java       # Gestão de contas e perfis de usuário
-        │   │   ├── specification/                # Filtros dinâmicos com JPA Specifications
-        │   │   └── validation/                   # Validações customizadas (ex: DataConclusaoValidator)
+        │   │   ├── CertifiqueseApplication.java    # Ponto de entrada da aplicação
+        │   │   ├── config/                         # Beans de infraestrutura (S3Client / Cloudflare R2)
+        │   │   ├── controller/                     # Endpoints RESTful
+        │   │   │   ├── AuthController.java         # Autenticação e ciclo de recuperação de senha
+        │   │   │   ├── UsuarioController.java      # Gestão de conta, perfil, avatar e credenciais
+        │   │   │   ├── CertificadoController.java  # CRUD de certificados, upload e extração via IA
+        │   │   │   └── PublicoController.java      # Vitrine pública de portfólios e healthcheck
+        │   │   ├── dto/                            # Java Records imutáveis para contratos de entrada/saída
+        │   │   ├── exception/                      # Tratamento global padronizado (RFC 7807 ProblemDetail)
+        │   │   ├── model/                          # Entidades JPA e mapeamento relacional
+        │   │   ├── repository/                     # Interfaces Spring Data JPA
+        │   │   ├── security/                       # Arquitetura de segurança
+        │   │   │   ├── authentication/             # Implementações customizadas de UserDetails
+        │   │   │   ├── config/                     # Políticas CORS, CSRF, HSTS, filtros e decoders JWT
+        │   │   │   ├── ratelimit/                  # Motor Sliding Window de limitação de taxa por IP
+        │   │   │   └── token/                      # Emissão, assinatura e validação de claims JWT
+        │   │   ├── service/                        # Camada de regras de negócio e orquestração
+        │   │   │   ├── email/                      # Abstração e implementação de envio de e-mails
+        │   │   │   ├── storage/                    # Integração transacional com Cloudflare R2
+        │   │   │   ├── AuthService.java            # Fluxos de login e geração de credenciais
+        │   │   │   ├── CertificadoService.java     # Regras de domínio, hashes SHA-256 e cotas de plano
+        │   │   │   ├── GeminiService.java          # Cliente multimodal Gemini com fallback automático
+        │   │   │   ├── RecuperacaoSenhaService.java# Gestão criptográfica de tokens de redefinição
+        │   │   │   └── UsuarioService.java         # Regras de perfil e ciclo de vida da conta
+        │   │   ├── specification/                  # Critérios dinâmicos de busca (JPA Specifications)
+        │   │   └── validation/                     # Annotations e validadores customizados (Bean Validation)
         │   └── resources/
-        │       ├── application.properties        # Propriedades de configuração do Spring Boot
-        │       └── db/migration/                 # Versionamento Flyway do Banco de Dados
-        │           ├── V0__create_initial_schema.sql
-        │           ├── V1__add_criado_em_to_tb_usuario.sql
-        │           ├── V2__add_role_to_tb_usuario.sql
-        │           ├── V3__add_recuperacao_senha_and_token_version.sql
-        │           ├── V4__add_campos_publicos_e_detalhes_certificado.sql
-        │           └── V5__add_foto_to_tb_usuario.sql
-        └── test/                                 # Suíte abrangente de testes automatizados (59 testes)
+        │       └── db/migration/                   # Scripts evolutivos Flyway (V0__ a V5__)
+        └── test/                                   # Suíte de testes automatizados de unidade e integração
 ```
 
 ---
 
-## 📡 Mapeamento Completo de Endpoints (API REST)
+## 📡 Especificação de Endpoints (API REST)
 
 ### 🔐 1. Autenticação (`/auth`)
 
 | Método | Endpoint | Acesso | Rate Limit | Descrição |
 | :--- | :--- | :--- | :--- | :--- |
-| `POST` | `/auth/login` | Público | 10 req/min | Autentica com e-mail e senha, retornando token JWT e dados do usuário. |
-| `POST` | `/auth/esqueci-senha` | Público | 5 req/2min | Dispara e-mail com link de redefinição para o endereço informado. |
-| `POST` | `/auth/redefinir-senha` | Público | Livre | Redefine a senha utilizando o token recebido por e-mail e confirmação. |
+| `POST` | `/auth/login` | Público | 10 req/min | Autentica credenciais e emite o token JWT assinado com `tokenVersion`. |
+| `POST` | `/auth/esqueci-senha` | Público | 5 req/2min | Gera token criptográfico e envia link de recuperação por e-mail. |
+| `POST` | `/auth/redefinir-senha` | Público | Livre | Valida o hash do token de recuperação, define nova senha e revoga sessões. |
 
 ### 👤 2. Usuários (`/usuarios`)
 
-| Método | Endpoint | Acesso | Rate Limit | Descrição |
-| :--- | :--- | :--- | :--- | :--- |
-| `POST` | `/usuarios` | Público | Livre | Cadastra uma nova conta de usuário no sistema. |
-| `GET` | `/usuarios/me` | Autenticado | Livre | Retorna os dados completos do usuário autenticado no momento. |
-| `PUT` | `/usuarios/me` | Autenticado | Livre | Atualiza dados cadastrais (nome, headline, bio, username, perfil público). |
-| `PUT` | `/usuarios/me/senha` | Autenticado | Livre | Altera a senha do usuário e invalida tokens JWT anteriores (`tokenVersion++`). |
-| `POST` | `/usuarios/me/foto` | Autenticado | Livre | Faz upload de nova foto de perfil (Multipart, máx 3MB) e limpa a anterior no R2. |
-| `DELETE`| `/usuarios/me/foto` | Autenticado | Livre | Remove a foto de perfil do usuário e exclui o arquivo no storage. |
-| `DELETE`| `/usuarios/me` | Autenticado | Livre | Exclui permanentemente a conta, certificados e todos os arquivos no R2. |
-| `GET` | `/usuarios` | `ROLE_ADMIN` | Livre | Lista todos os usuários cadastrados na plataforma. |
+| Método | Endpoint | Acesso | Descrição |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/usuarios` | Público | Registra uma nova conta de usuário na plataforma. |
+| `GET` | `/usuarios/me` | Autenticado | Retorna o perfil completo do usuário autenticado. |
+| `PUT` | `/usuarios/me` | Autenticado | Atualiza dados do perfil (nome, headline, bio, username e visibilidade pública). |
+| `PUT` | `/usuarios/me/senha` | Autenticado | Atualiza a senha mediante confirmação da atual e incrementa `tokenVersion`. |
+| `POST` | `/usuarios/me/foto` | Autenticado | Realiza upload de novo avatar no Cloudflare R2 e remove o anterior pós-commit. |
+| `DELETE` | `/usuarios/me/foto` | Autenticado | Remove a foto de perfil ativa do banco de dados e do storage em nuvem. |
+| `DELETE` | `/usuarios/me` | Autenticado | Encerra a conta permanentemente e limpa todos os certificados e mídias no R2. |
+| `GET` | `/usuarios` | `ROLE_ADMIN` | Lista todas as contas registradas para auditoria administrativa. |
 
 ### 📜 3. Certificados (`/certificados`)
 
 | Método | Endpoint | Acesso | Rate Limit | Descrição |
 | :--- | :--- | :--- | :--- | :--- |
-| `POST` | `/certificados/extrair-dados`| Autenticado | 15 req/min | Upload do arquivo + extração de metadados por IA (Gemini) + upload no R2. |
-| `POST` | `/certificados/imagens` | Autenticado | Livre | Upload avulso de imagem no Cloudflare R2 (retorna chave e URL). |
-| `GET` | `/certificados/imagens/{chave}`| Público | Livre | Retorna os bytes da imagem/PDF armazenados no R2 com cache público. |
-| `POST` | `/certificados` | Autenticado | Livre | Cadastra um certificado validando limites de plano e hash exclusivo. |
-| `PUT` | `/certificados/{hash}` | Autenticado | Livre | Atualiza os dados do certificado (se a foto mudar, limpa a foto anterior). |
-| `GET` | `/certificados/me` | Autenticado | Livre | Consulta e filtra os certificados do usuário autenticado (query params). |
-| `DELETE`| `/certificados/{hash}` | Autenticado | Livre | Deleta o certificado do usuário e remove o arquivo correspondente no R2. |
-| `GET` | `/certificados` | `ROLE_ADMIN` | Livre | Lista todos os certificados cadastrados no sistema (visão administrativa). |
+| `POST` | `/certificados/extrair-dados` | Autenticado | 15 req/min | Analisa imagem/PDF via Google Gemini, armazena no R2 e retorna metadados estruturados. |
+| `POST` | `/certificados/imagens` | Autenticado | Livre | Realiza upload avulso de comprovante no Cloudflare R2. |
+| `GET` | `/certificados/imagens/{chave}` | Público | Livre | Entrega o arquivo armazenado no R2 com cabeçalhos de cache imutável de 1 ano. |
+| `POST` | `/certificados` | Autenticado | Livre | Registra um novo certificado validando cotas do plano e unicidade via hash `SHA-256`. |
+| `PUT` | `/certificados/{hash}` | Autenticado | Livre | Atualiza metadados e anexo do certificado (com expurgo automático de mídia obsoleta). |
+| `GET` | `/certificados/me` | Autenticado | Livre | Lista os certificados do titular com filtros dinâmicos (`nome`, `empresa`, `dataConclusao`, `tags`). |
+| `DELETE` | `/certificados/{hash}` | Autenticado | Livre | Remove o registro do certificado e exclui o respectivo arquivo no Cloudflare R2. |
+| `GET` | `/certificados` | `ROLE_ADMIN` | Livre | Consulta global de certificados para governança administrativa. |
 
-### 🌍 4. Endpoints Públicos (`/public`)
+### 🌍 4. Vitrine Pública & Operação (`/public`)
 
 | Método | Endpoint | Acesso | Descrição |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/public/usuarios/{username}` | Público | Retorna dados públicos do perfil (foto, headline, bio, total horas e certificados). |
-| `GET` | `/public/usuarios/{username}/certificados` | Público | Lista os certificados com visibilidade pública do usuário (até o limite do plano). |
-| `GET` | `/public/health` | Público | Healthcheck leve da API retornando `{ "status": "ok", "timestamp": "..." }`. |
-
-### 📖 5. Documentação Interativa
-
-| Endpoint | Acesso | Descrição |
-| :--- | :--- | :--- |
-| `/swagger-ui/index.html` | Público | Interface visual interativa para teste e inspeção dos endpoints |
-| `/v3/api-docs` | Público | Especificação OpenAPI 3.0 em formato JSON |
+| `GET` | `/public/usuarios/{username}` | Público | Retorna os dados públicos do portfólio, somatório de horas e total de conquistas. |
+| `GET` | `/public/usuarios/{username}/certificados` | Público | Lista os certificados marcados como públicos pelo titular (respeitando limites do plano). |
+| `GET` | `/public/health` | Público | Endpoint de monitoramento de disponibilidade (`status` e `timestamp`). |
 
 ---
 
-## 🛡️ Segurança & Proteção
+## 🛡️ Segurança, Resiliência e Governança
 
-A aplicação adota práticas recomendadas para garantir a integridade dos dados e a disponibilidade do serviço:
-
-1. **Tokens JWT com Invalidação Ativa (`tokenVersion`)**:
-   - Cada usuário possui um contador `tokenVersion` no banco de dados, que é injetado como claim no token JWT.
-   - A cada alteração ou redefinição de senha, o contador é incrementado, rejeitando instantaneamente qualquer token antigo em circulação.
-2. **Rate Limiting Baseado em Janela Deslizante**:
-   - Algoritmo implementado via `ConcurrentLinkedDeque` em memória por IP de origem.
-   - Detecta e previne abuso de requisições sensíveis (tentativas de força bruta no login, spam de recuperação de senha e consumo excessivo da API de IA).
-3. **Cabeçalhos de Segurança HTTP**:
-   - **HSTS** ativado com `includeSubDomains` e `maxAge` de 1 ano.
-   - **X-Frame-Options** configurado como `SAMEORIGIN`.
-   - **X-Content-Type-Options** com `nosniff`.
-4. **Política de CORS Abrangente e Parametrizável**:
-   - Suporte dinâmico a origens locais (`localhost`, `127.0.0.1`), domínio customizado (`FRONTEND_URL`), Vercel, Render e GitHub Pages.
-5. **Prevenção de Inconsistências de Arquivos no Storage**:
-   - Operações de exclusão de arquivos no Cloudflare R2 são registradas e executadas apenas **após o commit da transação** no banco de dados (`TransactionSynchronizationManager.registerSynchronization`). Se o banco falhar, o arquivo físico não é perdido.
+1. **Invalidação Instantânea de Sessões (`tokenVersion`)**:
+   - Todo token JWT carrega a versão de credencial do usuário. Ao alterar ou redefinir a senha, o contador é incrementado na base relacional, invalidando imediatamente qualquer token emitido anteriormente sem necessidade de listas de bloqueio externas.
+2. **Proteção de Borda com Rate Limiting (Sliding Window)**:
+   - Implementação thread-safe baseada em `ConcurrentLinkedDeque` por endereço IP real, mitigando ataques de dicionário no login, flooding de e-mails transacionais e uso abusivo do motor de Inteligência Artificial.
+3. **Hardening de Cabeçalhos HTTP & Erros Padronizados**:
+   - Políticas **HSTS** (`max-age=31536000; includeSubDomains`), `X-Frame-Options: SAMEORIGIN` e `X-Content-Type-Options: nosniff` habilitadas por padrão.
+   - Respostas de erro seguem a especificação **RFC 7807 (`ProblemDetail`)**, evitando vazamento de stack traces ou detalhes internos de infraestrutura.
+4. **Sincronização Transacional de Storage**:
+   - Exclusões de arquivos no Cloudflare R2 são vinculadas ao ciclo de vida da transação JPA (`afterCommit`), garantindo que falhas ou rollbacks no banco de dados jamais causem perda prematura de arquivos físicos na nuvem.
 
 ---
 
 ## 🔌 Integrações Externas
 
-### 1. Google Gemini API (Extração Inteligente)
-- **Modelos Utilizados**:
-  - Modelo primário: `gemini-3.8-flash`
-  - Cadeia de fallback automático: `gemini-3.8-flash` ➔ `gemini-3.5-flash` ➔ `gemini-3.5-flash-lite`
-- **Comportamento Resiliente**: Caso a API do Google retorne `429 (Too Many Requests)`, `503 (Service Unavailable)`, `500` ou timeout de rede, a aplicação chaveia instantaneamente para o próximo modelo da cadeia sem falhar a requisição do usuário.
-- **Estruturação JSON Estrita**:
-  - O prompt instrui a IA através de `system_instruction` especializada e schema de retorno garantido.
-  - Sanitização de títulos (rejeita termos genéricos como "Certificado de Conclusão" ou nomes de alunos no lugar do curso).
-  - Normalização de links de validação e restrição de datas válidas (1960 até a data corrente).
+### 1. Google Gemini API (Motor de Extração Documental)
+- **Alta Disponibilidade por Cadeia de Fallback**: Opera com o modelo primário `gemini-3.8-flash` e comuta transparentemente para `gemini-3.5-flash` e `gemini-3.5-flash-lite` em cenários de saturação (`HTTP 429`), indisponibilidade temporária (`HTTP 503`) ou timeout.
+- **Governança de Dados**: Utiliza `responseSchema` nativo e pós-processamento determinístico para garantir tipos válidos, normalizar URLs de autenticidade e filtrar ruídos comuns de OCR.
 
-### 2. Cloudflare R2 (Armazenamento de Arquivos)
-- Armazenamento em nuvem com compatibilidade total com a API S3 da AWS.
-- Configurado com `chunkedEncodingEnabled(false)` para total compatibilidade com assinaturas SigV4 do R2 no AWS SDK v2.
-- Suporta dois modos de operação:
-  - **Bucket Privado (Padrão)**: O backend atua como proxy seguro em `/certificados/imagens/{chave}` com cache imutável de 1 ano.
-  - **Bucket Público / Domínio Customizado**: Quando `R2_PUBLIC_URL` é informada, o backend retorna diretamente a URL da CDN.
+### 2. Cloudflare R2 (Object Storage S3-Compatible)
+- Integração via **AWS SDK v2** com assinatura SigV4 e suporte híbrido: entrega via proxy de aplicação com cache de longa duração ou resolução direta via CDN customizada.
 
-### 3. Serviço de E-mail (SMTP / Resend)
-- Integração via `JavaMailSender` sobre TLS na porta 587.
-- Envio de links seguros para recuperação de senhas com templates estilizados.
+### 3. Resend (Mensageria Transacional SMTP)
+- Canal seguro sob TLS para entrega de comunicações críticas de segurança e recuperação de conta.
 
 ---
 
-## ⚙️ Variáveis de Ambiente
+## ⚖️ Regras de Negócio e Limites Operacionais
 
-Crie um arquivo `.env` dentro da pasta `certifiquese/` com base no arquivo `.env.example`:
+A plataforma aplica políticas de governança e controle de recursos de acordo com o perfil da conta:
 
-```properties
-# -----------------------------------------------------------------------------
-# Banco de Dados PostgreSQL
-# -----------------------------------------------------------------------------
-POSTGRES_DB=certifiquese
-POSTGRES_USER=certifiquese_user
-POSTGRES_PASSWORD=certifiquese_pass
-POSTGRES_PORT=5434
-
-DB_URL=jdbc:postgresql://localhost:5434/certifiquese
-DB_USERNAME=certifiquese_user
-DB_PASSWORD=certifiquese_pass
-
-# -----------------------------------------------------------------------------
-# Autenticação JWT
-# -----------------------------------------------------------------------------
-# Chave HMAC-SHA de pelo menos 256 bits (32 caracteres ou Base64)
-JWT_SECRET=REv8hRSr87eDme5ZpWBlfBrytarn66da9cVUpyGnpH8
-
-# -----------------------------------------------------------------------------
-# Configurações do Hibernate / JPA
-# -----------------------------------------------------------------------------
-JPA_DDL_AUTO=validate
-JPA_SHOW_SQL=false
-JPA_FORMAT_SQL=false
-
-# -----------------------------------------------------------------------------
-# Aplicação & Frontend
-# -----------------------------------------------------------------------------
-FRONTEND_URL=https://certifique-se.app
-
-# -----------------------------------------------------------------------------
-# Cloudflare R2 Storage (S3 API)
-# -----------------------------------------------------------------------------
-R2_ACCOUNT_ID=seu_account_id_cloudflare
-R2_ACCESS_KEY_ID=sua_access_key_r2
-R2_SECRET_ACCESS_KEY=sua_secret_access_key_r2
-R2_BUCKET_NAME=certifiquese-bucket
-# Opcional: Domínio customizado ou r2.dev (ex: https://arquivos.meudominio.com)
-R2_PUBLIC_URL=
-
-# -----------------------------------------------------------------------------
-# Google Gemini API
-# -----------------------------------------------------------------------------
-GEMINI_API_KEY=sua_chave_de_api_gemini
-GEMINI_MODEL=gemini-3.8-flash
-
-# -----------------------------------------------------------------------------
-# Envio de E-mails (Resend SMTP)
-# -----------------------------------------------------------------------------
-MAIL_HOST=smtp.resend.com
-MAIL_PORT=587
-MAIL_USERNAME=resend
-MAIL_PASSWORD=re_sua_chave_resend_aqui
-MAIL_FROM=Certifique-se <nao-responda@certifique-se.app>
-
-# -----------------------------------------------------------------------------
-# Rate Limiting
-# -----------------------------------------------------------------------------
-RATE_LIMIT_ENABLED=true
-```
-
----
-
-## 🚀 Como Executar o Projeto
-
-### Pré-requisitos
-- **Java 21** instalado (para desenvolvimento local sem Docker).
-- **Docker** e **Docker Compose** instalados.
-- **Git** para clonar o repositório.
-
----
-
-### Opção 1: Via Docker Compose (Recomendado)
-
-Esta opção inicializa o container do **PostgreSQL 16** e constrói o container da **Aplicação Spring Boot**:
-
-1. Clone o repositório:
-   ```bash
-   git clone https://github.com/luanrichardsz/Certifique-se.git
-   cd Certifique-se/certifiquese
-   ```
-
-2. Crie e preencha o arquivo `.env`:
-   ```bash
-   cp .env.example .env
-   # Edite o .env com suas chaves (Gemini, R2, etc.)
-   ```
-
-3. Suba o ambiente com o Docker Compose:
-   ```bash
-   docker compose up --build -d
-   ```
-
-4. Verifique os logs da aplicação:
-   ```bash
-   docker compose logs -f app
-   ```
-
-5. A aplicação estará disponível em `http://localhost:8080`.
-   - Documentação Swagger: `http://localhost:8080/swagger-ui/index.html`
-   - Healthcheck: `http://localhost:8080/public/health`
-
----
-
-### Opção 2: Execução Local (Híbrida)
-
-Você pode subir apenas o banco de dados no Docker e rodar a aplicação localmente pelo Maven Wrapper:
-
-1. Acesse o diretório do projeto:
-   ```bash
-   cd certifiquese
-   ```
-
-2. Suba apenas o serviço do PostgreSQL:
-   ```bash
-   docker compose up -d db
-   ```
-
-3. Configure o arquivo `.env` para apontar para `localhost:5434`:
-   ```properties
-   DB_URL=jdbc:postgresql://localhost:5434/certifiquese
-   DB_USERNAME=certifiquese_user
-   DB_PASSWORD=certifiquese_pass
-   ```
-
-4. Inicie a aplicação com o Maven Wrapper:
-   ```bash
-   ./mvnw spring-boot:run
-   ```
-
----
-
-## 🧪 Testes Automatizados
-
-O projeto conta com uma suíte de testes robusta abrangendo testes unitários, testes de integração de controladores com `MockMvc`, testes de repositórios JPA, serviços de segurança e regras de negócio:
-
-### Executar a suíte de testes padrão
-```bash
-cd certifiquese
-./mvnw test
-```
-
-> **Resultado dos Testes**: A suíte executa com banco em memória H2 (`application-test.properties`) com 100% de sucesso (59 testes executados, 0 falhas, 0 erros).
-
-### Executar o Teste Real de Integração com Cloudflare R2
-Para validar a conectividade real com as credenciais do seu bucket R2 (lidas do `.env`):
-```bash
-./mvnw -q -Dtest=R2LiveSmokeIT test
-```
-*Este teste envia uma imagem PNG mínima ao bucket, verifica a persistência e remove o arquivo logo em seguida.*
-
----
-
-## ⚖️ Regras de Negócio e Limites
-
-Para proteger o consumo de recursos e viabilizar planos de monetização futuros, a plataforma aplica as seguintes regras:
-
-| Regra / Limite | Plano Gratuito (`USER`) | Administrador (`ADMIN`) |
+| Diretriz / Limite | Conta Padrão (`USER`) | Administrador (`ADMIN`) |
 | :--- | :--- | :--- |
-| **Total de Certificados** | Máximo de **15 certificados** | Ilimitado |
-| **Certificados Públicos no Portfólio** | Máximo de **8 certificados** | Ilimitado |
-| **Tamanho Máximo por Certificado** | 5 MB | 5 MB |
-| **Tamanho Máximo da Foto de Perfil** | 3 MB | 3 MB |
-| **Formatos Aceitos (Certificado)** | JPEG, PNG, WebP, PDF | JPEG, PNG, WebP, PDF |
-| **Formatos Aceitos (Avatar)** | JPEG, PNG, WebP | JPEG, PNG, WebP |
-| **Validação da Data de Conclusão** | 1960 até a data atual | 1960 até a data atual |
-| **Anti-duplicação de Certificado** | Hash SHA-256 exclusivo | Hash SHA-256 exclusivo |
+| **Acervo Total de Certificados** | Até **15 certificados** | Ilimitado |
+| **Exibição Simultânea no Portfólio Público** | Até **8 certificados** | Ilimitado |
+| **Tamanho Máximo por Comprovante** | `5 MB` | `5 MB` |
+| **Tamanho Máximo de Avatar** | `3 MB` | `3 MB` |
+| **Formatos Suportados (Certificados)** | `JPEG`, `PNG`, `WebP`, `PDF` | `JPEG`, `PNG`, `WebP`, `PDF` |
+| **Formatos Suportados (Avatar)** | `JPEG`, `PNG`, `WebP` | `JPEG`, `PNG`, `WebP` |
+| **Janela Temporal de Conclusão** | `1960` até a data atual | `1960` até a data atual |
+| **Controle de Duplicidade** | Hash `SHA-256` exclusivo por conteúdo | Hash `SHA-256` exclusivo por conteúdo |
 
 ---
 
-## 📄 Licença e Autoria
+## 🧪 Qualidade e Testes Automatizados
 
-Projeto desenvolvido por **[Luan Richard](https://github.com/luanrichardsz)**.
+A estabilidade do backend é assegurada por uma suíte abrangente de **59 testes automatizados** (unitários e de integração com `MockMvc` e banco em memória H2), cobrindo:
+- Regras de negócio de certificados, limites de planos e prevenção de duplicidade por hash.
+- Fluxos de segurança, emissão/revogação de JWT (`tokenVersion`), RBAC e políticas de Rate Limiting.
+- Ciclo completo de recuperação de senha e expiração criptográfica de tokens.
+- Fallback resiliente e sanitização de payloads na integração com a API do Google Gemini.
+- Sincronização transacional de uploads e exclusões junto ao storage S3/R2.
 
-Distribuído sob licença aberta para uso de portfólio e estudos. Sinta-se à vontade para contribuir via Pull Requests ou reportar melhorias na aba de Issues!
+---
+
+## 📄 Propriedade e Direitos
+
+Projeto arquitetado e desenvolvido por **[Luan Richard](https://github.com/luanrichardsz)**.
+
+**Todos os direitos reservados.** Este sistema e seu código-fonte são proprietários e confidenciais, não sendo distribuídos sob licença open source. A cópia, redistribuição ou engenharia reversa não autorizada é estritamente proibida.
